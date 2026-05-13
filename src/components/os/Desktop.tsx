@@ -45,24 +45,10 @@ const ICON_CELLS_STORAGE_KEY = "portfolio-os-desktop-icon-cells";
 
 const DESKTOP_CELL_WIDTH = 118;
 const DESKTOP_CELL_HEIGHT = 122;
-const MOBILE_CELL_WIDTH = 150;
-const MOBILE_CELL_HEIGHT = 132;
-
-const ICON_WIDTH = 108;
-const ICON_HEIGHT = 116;
+const ICON_WIDTH = 96;
 const DESKTOP_PADDING_X = 22;
 const DESKTOP_PADDING_Y = 22;
-const MOBILE_PADDING_X = 22;
-const MOBILE_PADDING_Y = 26;
 const TASKBAR_CLEARANCE = 96;
-
-function isMobileViewport() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  return window.innerWidth < 640;
-}
 
 function readStoredFolders(): FolderItem[] {
   try {
@@ -119,36 +105,31 @@ function readStoredCells(): Record<string, DesktopIconCell> {
   }
 }
 
+function isMobileViewport() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.innerWidth < 640;
+}
+
 function getGridMetrics() {
   if (typeof window === "undefined") {
     return {
-      columns: 4,
+      columns: 6,
       rows: 6,
-      cellWidth: DESKTOP_CELL_WIDTH,
-      cellHeight: DESKTOP_CELL_HEIGHT,
-      paddingX: DESKTOP_PADDING_X,
-      paddingY: DESKTOP_PADDING_Y,
-      isMobile: false,
     };
   }
 
-  const mobile = window.innerWidth < 640;
-  const cellWidth = mobile ? MOBILE_CELL_WIDTH : DESKTOP_CELL_WIDTH;
-  const cellHeight = mobile ? MOBILE_CELL_HEIGHT : DESKTOP_CELL_HEIGHT;
-  const paddingX = mobile ? MOBILE_PADDING_X : DESKTOP_PADDING_X;
-  const paddingY = mobile ? MOBILE_PADDING_Y : DESKTOP_PADDING_Y;
-
-  const usableWidth = Math.max(1, window.innerWidth - paddingX * 2);
-  const usableHeight = Math.max(1, window.innerHeight - TASKBAR_CLEARANCE - paddingY * 2);
+  const usableWidth = Math.max(1, window.innerWidth - DESKTOP_PADDING_X * 2);
+  const usableHeight = Math.max(
+    1,
+    window.innerHeight - TASKBAR_CLEARANCE - DESKTOP_PADDING_Y * 2
+  );
 
   return {
-    columns: Math.max(1, Math.floor(usableWidth / cellWidth)),
-    rows: Math.max(1, Math.floor(usableHeight / cellHeight)),
-    cellWidth,
-    cellHeight,
-    paddingX,
-    paddingY,
-    isMobile: mobile,
+    columns: Math.max(1, Math.floor(usableWidth / DESKTOP_CELL_WIDTH)),
+    rows: Math.max(1, Math.floor(usableHeight / DESKTOP_CELL_HEIGHT)),
   };
 }
 
@@ -171,21 +152,22 @@ function getDefaultIconCell(index: number): DesktopIconCell {
 }
 
 function cellToPosition(cell: DesktopIconCell) {
-  const metrics = getGridMetrics();
   const clampedCell = clampCell(cell);
 
   return {
-    x: metrics.paddingX + clampedCell.column * metrics.cellWidth,
-    y: metrics.paddingY + clampedCell.row * metrics.cellHeight,
+    x: DESKTOP_PADDING_X + clampedCell.column * DESKTOP_CELL_WIDTH,
+    y: DESKTOP_PADDING_Y + clampedCell.row * DESKTOP_CELL_HEIGHT,
   };
 }
 
 function pointerToCell(clientX: number, clientY: number): DesktopIconCell {
-  const metrics = getGridMetrics();
-
   return clampCell({
-    column: Math.round((clientX - metrics.paddingX - ICON_WIDTH / 2) / metrics.cellWidth),
-    row: Math.round((clientY - metrics.paddingY - ICON_HEIGHT / 2) / metrics.cellHeight),
+    column: Math.round(
+      (clientX - DESKTOP_PADDING_X - ICON_WIDTH / 2) / DESKTOP_CELL_WIDTH
+    ),
+    row: Math.round(
+      (clientY - DESKTOP_PADDING_Y - 52) / DESKTOP_CELL_HEIGHT
+    ),
   });
 }
 
@@ -217,23 +199,16 @@ function findFreeCell(
   return first;
 }
 
-function normalizeIconCells(
+function normalizeDesktopCells(
   items: DesktopIconItem[],
   cells: Record<string, DesktopIconCell>
 ): Record<string, DesktopIconCell> {
-  const metrics = getGridMetrics();
   const nextCells: Record<string, DesktopIconCell> = {};
   const occupied = new Set<string>();
 
   items.forEach((item, index) => {
     const storedCell = cells[item.id];
-    const wantedCell =
-      metrics.isMobile
-        ? getDefaultIconCell(index)
-        : storedCell
-          ? clampCell(storedCell)
-          : getDefaultIconCell(index);
-
+    const wantedCell = storedCell ? clampCell(storedCell) : getDefaultIconCell(index);
     const finalCell = findFreeCell(wantedCell, occupied);
 
     nextCells[item.id] = finalCell;
@@ -253,6 +228,7 @@ export function Desktop() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [iconCells, setIconCells] = useState<Record<string, DesktopIconCell>>({});
   const [mounted, setMounted] = useState(false);
+  const [mobile, setMobile] = useState(false);
   const [layoutTick, setLayoutTick] = useState(0);
 
   const dragStateRef = useRef<{
@@ -291,16 +267,34 @@ export function Desktop() {
   useEffect(() => {
     setFolders(readStoredFolders());
     setIconCells(readStoredCells());
+    setMobile(isMobileViewport());
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!mounted) {
+    const handleResize = () => {
+      setMobile(isMobileViewport());
+      setLayoutTick((current) => current + 1);
+    };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || mobile) {
       return;
     }
 
-    setIconCells((currentCells) => normalizeIconCells(desktopItems, currentCells));
-  }, [desktopItems, layoutTick, mounted]);
+    setIconCells((currentCells) =>
+      normalizeDesktopCells(desktopItems, currentCells)
+    );
+  }, [desktopItems, layoutTick, mobile, mounted]);
 
   useEffect(() => {
     if (!mounted) {
@@ -311,7 +305,7 @@ export function Desktop() {
   }, [folders, mounted]);
 
   useEffect(() => {
-    if (!mounted) {
+    if (!mounted || mobile) {
       return;
     }
 
@@ -319,7 +313,7 @@ export function Desktop() {
       ICON_CELLS_STORAGE_KEY,
       JSON.stringify(iconCells)
     );
-  }, [iconCells, mounted]);
+  }, [iconCells, mobile, mounted]);
 
   useEffect(() => {
     const closeContextMenu = () => setContextMenu(null);
@@ -330,20 +324,6 @@ export function Desktop() {
     return () => {
       window.removeEventListener("click", closeContextMenu);
       window.removeEventListener("keydown", closeContextMenu);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setLayoutTick((current) => current + 1);
-    };
-
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("orientationchange", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("orientationchange", handleResize);
     };
   }, []);
 
@@ -381,6 +361,12 @@ export function Desktop() {
     }));
   };
 
+  const openItem = (item: DesktopIconItem) => {
+    if (item.kind === "app" && item.appId) {
+      openApp(item.appId);
+    }
+  };
+
   const startIconDrag = (
     event: ReactPointerEvent<HTMLButtonElement>,
     item: DesktopIconItem,
@@ -393,6 +379,10 @@ export function Desktop() {
     }
 
     setSelectedItemId(item.id);
+
+    if (mobile) {
+      return;
+    }
 
     const currentCell = getIconCell(item.id, index);
 
@@ -474,29 +464,20 @@ export function Desktop() {
 
   const resetIconPositions = () => {
     window.localStorage.removeItem(ICON_CELLS_STORAGE_KEY);
-    setIconCells(normalizeIconCells(desktopItems, {}));
+    setIconCells(normalizeDesktopCells(desktopItems, {}));
   };
 
-  const metrics = mounted ? getGridMetrics() : {
-    columns: 2,
-    rows: 5,
-    cellWidth: MOBILE_CELL_WIDTH,
-    cellHeight: MOBILE_CELL_HEIGHT,
-    paddingX: MOBILE_PADDING_X,
-    paddingY: MOBILE_PADDING_Y,
-    isMobile: true,
-  };
-
+  const metrics = mounted ? getGridMetrics() : { columns: 6, rows: 6 };
   const requiredColumns = Math.max(
     metrics.columns,
     Math.ceil(desktopItems.length / Math.max(metrics.rows, 1))
   );
 
   const desktopWidth =
-    metrics.paddingX * 2 + requiredColumns * metrics.cellWidth;
+    DESKTOP_PADDING_X * 2 + requiredColumns * DESKTOP_CELL_WIDTH;
 
   const desktopHeight =
-    metrics.paddingY * 2 + metrics.rows * metrics.cellHeight;
+    DESKTOP_PADDING_Y * 2 + metrics.rows * DESKTOP_CELL_HEIGHT;
 
   return (
     <section
@@ -511,69 +492,103 @@ export function Desktop() {
         });
       }}
     >
-      <div
-        className="relative"
-        style={{
-          width: Math.max(window.innerWidth, desktopWidth),
-          minHeight: Math.max(window.innerHeight - TASKBAR_CLEARANCE, desktopHeight),
-        }}
-      >
-        {desktopItems.map((item, index) => {
-          const Icon = item.icon ?? Folder;
-          const isSelected = selectedItemId === item.id;
-          const cell = getIconCell(item.id, index);
-          const position = cellToPosition(cell);
+      {mobile ? (
+        <div className="grid grid-cols-2 gap-x-8 gap-y-10 px-8 pb-28 pt-8">
+          {desktopItems.map((item) => {
+            const Icon = item.icon ?? Folder;
+            const isSelected = selectedItemId === item.id;
 
-          return (
-            <button
-              key={item.id}
-              type="button"
-              className={clsx(
-                "absolute flex w-[108px] touch-none select-none flex-col items-center gap-2 rounded-2xl p-2 text-center text-white outline-none transition-[background,border-color,box-shadow,left,top] duration-100 focus-visible:bg-white/10",
-                isSelected ? "bg-white/15" : "hover:bg-white/10"
-              )}
-              style={{
-                left: position.x,
-                top: position.y,
-              }}
-              onPointerDown={(event) => startIconDrag(event, item, index)}
-              onDoubleClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-
-                if (item.kind === "app" && item.appId) {
-                  openApp(item.appId);
-                }
-              }}
-              onKeyDown={(event) => {
-                if (
-                  (event.key === "Enter" || event.key === " ") &&
-                  item.kind === "app" &&
-                  item.appId
-                ) {
-                  openApp(item.appId);
-                }
-              }}
-              title={item.kind === "folder" ? t("desktop.folderHint") : item.title}
-            >
-              <span
+            return (
+              <button
+                key={item.id}
+                type="button"
                 className={clsx(
-                  "flex h-16 w-16 items-center justify-center rounded-2xl border shadow-xl backdrop-blur-md transition",
-                  isSelected
-                    ? "border-[rgba(var(--os-accent-rgb),0.55)] bg-[rgba(var(--os-accent-rgb),0.18)]"
-                    : "border-white/10 bg-slate-950/35 hover:bg-white/15"
+                  "flex min-h-[132px] w-full select-none flex-col items-center justify-start gap-3 rounded-3xl p-2 text-center text-white outline-none transition focus-visible:bg-white/10",
+                  isSelected ? "bg-white/15" : "hover:bg-white/10"
                 )}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setSelectedItemId(item.id);
+                  openItem(item);
+                }}
+                title={item.kind === "folder" ? t("desktop.folderHint") : item.title}
               >
-                <Icon size={30} />
-              </span>
+                <span
+                  className={clsx(
+                    "flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border shadow-xl backdrop-blur-md transition",
+                    isSelected
+                      ? "border-[rgba(var(--os-accent-rgb),0.55)] bg-[rgba(var(--os-accent-rgb),0.18)]"
+                      : "border-white/10 bg-slate-950/35 hover:bg-white/15"
+                  )}
+                >
+                  <Icon size={30} />
+                </span>
 
-              <span className="line-clamp-2 text-sm font-semibold leading-tight drop-shadow">
-                {item.title}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+                <span className="max-w-[128px] text-center text-base font-semibold leading-tight drop-shadow">
+                  {item.title}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div
+          className="relative"
+          style={{
+            width: Math.max(window.innerWidth, desktopWidth),
+            minHeight: Math.max(window.innerHeight - TASKBAR_CLEARANCE, desktopHeight),
+          }}
+        >
+          {desktopItems.map((item, index) => {
+            const Icon = item.icon ?? Folder;
+            const isSelected = selectedItemId === item.id;
+            const cell = getIconCell(item.id, index);
+            const position = cellToPosition(cell);
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={clsx(
+                  "absolute flex w-24 touch-none select-none flex-col items-center gap-2 rounded-2xl p-2 text-center text-white outline-none transition-[background,border-color,box-shadow,left,top] duration-100 focus-visible:bg-white/10",
+                  isSelected ? "bg-white/15" : "hover:bg-white/10"
+                )}
+                style={{
+                  left: position.x,
+                  top: position.y,
+                }}
+                onPointerDown={(event) => startIconDrag(event, item, index)}
+                onDoubleClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  openItem(item);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    openItem(item);
+                  }
+                }}
+                title={item.kind === "folder" ? t("desktop.folderHint") : item.title}
+              >
+                <span
+                  className={clsx(
+                    "flex h-14 w-14 items-center justify-center rounded-2xl border shadow-xl backdrop-blur-md transition",
+                    isSelected
+                      ? "border-[rgba(var(--os-accent-rgb),0.55)] bg-[rgba(var(--os-accent-rgb),0.18)]"
+                      : "border-white/10 bg-slate-950/35 hover:bg-white/15"
+                  )}
+                >
+                  <Icon size={28} />
+                </span>
+
+                <span className="line-clamp-2 text-xs font-semibold drop-shadow">
+                  {item.title}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <AnimatePresence>
         {contextMenu && (
