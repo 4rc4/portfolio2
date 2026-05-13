@@ -113,6 +113,20 @@ function isMobileViewport() {
   return window.innerWidth < 640;
 }
 
+function getViewportSize() {
+  if (typeof window === "undefined") {
+    return {
+      width: 1280,
+      height: 720,
+    };
+  }
+
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight,
+  };
+}
+
 function getGridMetrics() {
   if (typeof window === "undefined") {
     return {
@@ -479,6 +493,8 @@ export function Desktop() {
   const desktopHeight =
     DESKTOP_PADDING_Y * 2 + metrics.rows * DESKTOP_CELL_HEIGHT;
 
+  const viewport = getViewportSize();
+
   return (
     <section
       className="fixed inset-0 z-0 overflow-auto px-0 pb-[96px] pt-0"
@@ -535,8 +551,8 @@ export function Desktop() {
         <div
           className="relative"
           style={{
-            width: Math.max(window.innerWidth, desktopWidth),
-            minHeight: Math.max(window.innerHeight - TASKBAR_CLEARANCE, desktopHeight),
+            width: Math.max(viewport.width, desktopWidth),
+            minHeight: Math.max(viewport.height - TASKBAR_CLEARANCE, desktopHeight),
           }}
         >
           {desktopItems.map((item, index) => {

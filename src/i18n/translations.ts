@@ -31,6 +31,8 @@ export const translations = {
     "app.skills.title": "Skills",
     "app.experience.title": "Experience",
     "app.systemMonitor.title": "System Monitor",
+    "app.browser.title": "Browser",
+    "app.notepad.title": "Notepad",
 
     "desktop.open": "Aç",
     "desktop.newFolder": "Yeni klasör",
@@ -207,6 +209,8 @@ export const translations = {
     "app.skills.title": "Skills",
     "app.experience.title": "Experience",
     "app.systemMonitor.title": "System Monitor",
+    "app.browser.title": "Browser",
+    "app.notepad.title": "Notepad",
 
     "desktop.open": "Open",
     "desktop.newFolder": "New folder",

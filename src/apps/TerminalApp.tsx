@@ -24,8 +24,28 @@ function createLine(kind: TerminalLine["kind"], text: string): TerminalLine {
   };
 }
 
+function commandHelp() {
+  return [
+    "Navigation:",
+    "  ls, cd <path>, pwd, cat <file>",
+    "",
+    "Portfolio:",
+    "  neofetch, about, projects, skills, contact, cv, socials",
+    "  github, linkedin, email",
+    "",
+    "Apps:",
+    "  open catudy, open projects, open contact, open cv",
+    "  open browser, open notepad, open settings",
+    "",
+    "System:",
+    "  theme dark, theme light, theme violet",
+    "  theme --dark, theme --light, theme --violet",
+    "  lang tr, lang en, date, echo <text>, clear, help",
+  ].join("\n");
+}
+
 export function TerminalApp({ launchData }: AppComponentProps) {
-  const { language, t } = useI18n();
+  const { language, setLanguage, t } = useI18n();
   const { setThemeMode, setWallpaperId, setAccentColorId } = useOSSettings();
   const { openApp } = useWindowManager();
 
@@ -52,6 +72,10 @@ export function TerminalApp({ launchData }: AppComponentProps) {
     setLines((currentLines) => [...currentLines, ...nextLines]);
   };
 
+  const openExternal = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   const runCommand = (rawCommand: string) => {
     const command = rawCommand.trim();
 
@@ -66,7 +90,8 @@ export function TerminalApp({ launchData }: AppComponentProps) {
 
     const [commandName, ...args] = command.split(/\s+/);
     const normalizedCommand = commandName.toLowerCase();
-    const joinedArgs = args.join(" ").toLowerCase();
+    const joinedArgs = args.join(" ");
+    const normalizedArgs = joinedArgs.toLowerCase();
 
     if (normalizedCommand === "clear") {
       setLines([]);
@@ -74,12 +99,22 @@ export function TerminalApp({ launchData }: AppComponentProps) {
     }
 
     if (normalizedCommand === "help") {
-      pushLines(promptLine, createLine("output", t("terminal.help")));
+      pushLines(promptLine, createLine("output", commandHelp()));
       return;
     }
 
     if (normalizedCommand === "whoami") {
-      pushLines(promptLine, createLine("output", t("terminal.whoami")));
+      pushLines(promptLine, createLine("output", profile.name));
+      return;
+    }
+
+    if (normalizedCommand === "date") {
+      pushLines(promptLine, createLine("output", new Date().toString()));
+      return;
+    }
+
+    if (normalizedCommand === "echo") {
+      pushLines(promptLine, createLine("output", joinedArgs));
       return;
     }
 
@@ -97,6 +132,7 @@ export function TerminalApp({ launchData }: AppComponentProps) {
             `Focus: ${profile.focus[language]}`,
             `Status: ${profile.status[language]}`,
             `Stack: ${profile.coreTools.join(", ")}`,
+            `Projects: ${portfolioProjects.length}`,
           ].join("\n")
         )
       );
@@ -108,7 +144,9 @@ export function TerminalApp({ launchData }: AppComponentProps) {
         promptLine,
         createLine(
           "output",
-          portfolioProjects.map((project) => `- ${project.title}`).join("\n")
+          portfolioProjects
+            .map((project, index) => `${index + 1}. ${project.title} — ${project.status[language]}`)
+            .join("\n")
         )
       );
       openApp("projects");
@@ -160,38 +198,91 @@ export function TerminalApp({ launchData }: AppComponentProps) {
       return;
     }
 
+    if (normalizedCommand === "github") {
+      pushLines(promptLine, createLine("output", profile.githubUrl));
+      openExternal(profile.githubUrl);
+      return;
+    }
+
+    if (normalizedCommand === "linkedin") {
+      pushLines(promptLine, createLine("output", profile.linkedInUrl));
+      openExternal(profile.linkedInUrl);
+      return;
+    }
+
+    if (normalizedCommand === "email") {
+      pushLines(promptLine, createLine("output", profile.contactEmail));
+      window.location.href = `mailto:${profile.contactEmail}`;
+      return;
+    }
+
+    if (normalizedCommand === "lang") {
+      if (normalizedArgs === "tr" || normalizedArgs === "en") {
+        setLanguage(normalizedArgs);
+        pushLines(promptLine, createLine("output", `Language set to ${normalizedArgs.toUpperCase()}.`));
+        return;
+      }
+
+      pushLines(promptLine, createLine("error", "Usage: lang tr | lang en"));
+      return;
+    }
+
     if (normalizedCommand === "open") {
-      if (joinedArgs.includes("catudy")) {
+      if (normalizedArgs.includes("catudy")) {
         openApp("projects", { projectId: "catudy-app" });
         pushLines(promptLine, createLine("output", "Opening Catudy..."));
         return;
       }
 
-      if (joinedArgs.includes("project")) {
+      if (normalizedArgs.includes("project")) {
         openApp("projects");
         pushLines(promptLine, createLine("output", "Opening Projects..."));
         return;
       }
 
-      if (joinedArgs.includes("contact")) {
+      if (normalizedArgs.includes("contact")) {
         openApp("contact");
         pushLines(promptLine, createLine("output", "Opening Contact..."));
         return;
       }
 
-      if (joinedArgs.includes("cv")) {
+      if (normalizedArgs.includes("cv")) {
         openApp("cv");
         pushLines(promptLine, createLine("output", "Opening CV..."));
         return;
       }
 
-      if (joinedArgs.includes("skills")) {
+      if (normalizedArgs.includes("skills")) {
         openApp("skills");
         pushLines(promptLine, createLine("output", "Opening Skills..."));
         return;
       }
 
-      pushLines(promptLine, createLine("error", "open catudy | open projects | open contact | open cv | open skills"));
+      if (normalizedArgs.includes("browser")) {
+        openApp("browser");
+        pushLines(promptLine, createLine("output", "Opening Browser..."));
+        return;
+      }
+
+      if (normalizedArgs.includes("notepad") || normalizedArgs.includes("readme")) {
+        openApp("notepad");
+        pushLines(promptLine, createLine("output", "Opening Notepad..."));
+        return;
+      }
+
+      if (normalizedArgs.includes("settings")) {
+        openApp("settings");
+        pushLines(promptLine, createLine("output", "Opening Settings..."));
+        return;
+      }
+
+      pushLines(
+        promptLine,
+        createLine(
+          "error",
+          "open catudy | open projects | open contact | open cv | open browser | open notepad | open settings"
+        )
+      );
       return;
     }
 
@@ -234,6 +325,30 @@ export function TerminalApp({ launchData }: AppComponentProps) {
       return;
     }
 
+    if (normalizedCommand === "cat") {
+      const targetPath = resolvePath(currentPath, args[0] ?? "");
+      const node = getNodeByPath(targetPath);
+
+      if (!node) {
+        pushLines(promptLine, createLine("error", `${t("terminal.notFound")}: ${targetPath}`));
+        return;
+      }
+
+      if (node.type === "folder") {
+        pushLines(promptLine, createLine("error", "cat: target is a folder"));
+        return;
+      }
+
+      pushLines(
+        promptLine,
+        createLine(
+          "output",
+          node.description ?? `${node.name}: no preview content available.`
+        )
+      );
+      return;
+    }
+
     if (normalizedCommand === "cd") {
       const targetPath = resolvePath(currentPath, args[0] ?? "~");
       const node = getNodeByPath(targetPath);
@@ -262,7 +377,7 @@ export function TerminalApp({ launchData }: AppComponentProps) {
     if (normalizedCommand === "theme") {
       const option = args[0];
 
-      if (option === "--dark") {
+      if (option === "--dark" || option === "dark") {
         setThemeMode("dark");
         setWallpaperId("midnight-grid");
         setAccentColorId("cyan");
@@ -270,7 +385,7 @@ export function TerminalApp({ launchData }: AppComponentProps) {
         return;
       }
 
-      if (option === "--light") {
+      if (option === "--light" || option === "light") {
         setThemeMode("light");
         setWallpaperId("warm-dusk");
         setAccentColorId("amber");
@@ -278,7 +393,7 @@ export function TerminalApp({ launchData }: AppComponentProps) {
         return;
       }
 
-      if (option === "--violet") {
+      if (option === "--violet" || option === "violet") {
         setThemeMode("dark");
         setWallpaperId("violet-glass");
         setAccentColorId("violet");
@@ -288,7 +403,7 @@ export function TerminalApp({ launchData }: AppComponentProps) {
 
       pushLines(
         promptLine,
-        createLine("output", "theme --dark | theme --light | theme --violet")
+        createLine("output", "theme dark | theme light | theme violet")
       );
       return;
     }

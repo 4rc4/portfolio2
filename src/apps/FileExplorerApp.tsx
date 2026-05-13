@@ -119,7 +119,10 @@ export function FileExplorerApp() {
     if (node.type === "folder") {
       navigateTo(joinPath(currentPath, node.name));
     } else {
-      setPreviewNode(node);
+      openApp("notepad", {
+        fileName: node.name,
+        content: getPreviewText(node),
+      });
     }
   };
 

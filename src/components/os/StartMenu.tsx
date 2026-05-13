@@ -21,7 +21,7 @@ export function StartMenu({ onClose }: StartMenuProps) {
 
   return (
     <motion.div
-      className="absolute bottom-16 left-3 z-[10010] w-[340px] overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-4 text-white shadow-2xl backdrop-blur-xl max-sm:left-2 max-sm:right-2 max-sm:w-auto"
+      className="fixed bottom-16 left-3 z-[10010] w-[340px] overflow-hidden rounded-3xl border border-white/10 bg-slate-950/70 p-4 text-white shadow-2xl backdrop-blur-xl max-sm:left-2 max-sm:right-2 max-sm:w-auto"
       initial={{ opacity: 0, y: 14, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 14, scale: 0.98 }}
@@ -29,7 +29,7 @@ export function StartMenu({ onClose }: StartMenuProps) {
     >
       <div className="mb-4">
         <p className="text-sm font-semibold">{t("start.menuTitle")}</p>
-        <p className="text-xs text-slate-400">{t("system.phase")}</p>
+        <p className="text-xs text-slate-400">{t("system.name")}</p>
       </div>
 
       <div>

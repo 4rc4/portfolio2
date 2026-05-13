@@ -1,6 +1,7 @@
 import {
   Activity,
   Briefcase,
+  Globe2,
   Code2,
   FileText,
   FolderKanban,
@@ -12,8 +13,10 @@ import {
 } from "lucide-react";
 
 import { AboutApp } from "@/apps/AboutApp";
+import { BrowserApp } from "@/apps/BrowserApp";
 import { ContactApp } from "@/apps/ContactApp";
 import { CVApp } from "@/apps/CVApp";
+import { NotepadApp } from "@/apps/NotepadApp";
 import { ExperienceApp } from "@/apps/ExperienceApp";
 import { FileExplorerApp } from "@/apps/FileExplorerApp";
 import { ProjectsApp } from "@/apps/ProjectsApp";
@@ -140,6 +143,37 @@ export const appRegistry: Record<string, AppDefinition> = {
     minSize: { width: 420, height: 320 },
     resizable: true,
     singleInstance: true,
+    showOnDesktop: true,
+    showInStartMenu: true,
+  },
+
+
+  browser: {
+    id: "browser",
+    title: "Browser",
+    titleKey: "app.browser.title",
+    icon: Globe2,
+    component: BrowserApp,
+    defaultPosition: { x: 180, y: 80 },
+    defaultSize: { width: 980, height: 650 },
+    minSize: { width: 580, height: 420 },
+    resizable: true,
+    singleInstance: true,
+    showOnDesktop: true,
+    showInStartMenu: true,
+  },
+
+  notepad: {
+    id: "notepad",
+    title: "Notepad",
+    titleKey: "app.notepad.title",
+    icon: FileText,
+    component: NotepadApp,
+    defaultPosition: { x: 210, y: 100 },
+    defaultSize: { width: 760, height: 560 },
+    minSize: { width: 460, height: 340 },
+    resizable: true,
+    singleInstance: false,
     showOnDesktop: true,
     showInStartMenu: true,
   },

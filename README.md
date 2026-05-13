@@ -6,13 +6,16 @@ Interactive web-based portfolio interface for Yusuf Arca Çiçek.
 
 - Web-based desktop interface
 - Window manager
-- Start menu and taskbar
+- Start menu, taskbar and control center
 - Bilingual TR / EN content
 - Project viewer
-- CV, skills, experience and contact apps
+- CV PDF viewer
+- Browser app
+- Notepad / README viewer
 - Terminal-style portfolio commands
 - File explorer with portfolio files
-- Custom wallpaper support
+- Desktop widgets
+- Mobile-friendly phone mode
 - GitHub Pages deployment setup
 
 ## Local development
@@ -47,8 +50,3 @@ Required repository setting:
 ```txt
 Settings → Pages → Source → GitHub Actions
 ```
-
-
-## Mobile desktop layout
-
-The desktop icon grid normalizes saved positions on mobile screens, so icons do not overlap when the viewport changes.

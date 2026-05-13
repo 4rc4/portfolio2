@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import { MonitorDown } from "lucide-react";
+import { MonitorDown, SlidersHorizontal, X } from "lucide-react";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 
@@ -9,13 +9,20 @@ import { appRegistry } from "@/config/appRegistry";
 import { useI18n } from "@/context/LanguageContext";
 import { useWindowManager } from "@/context/WindowManagerContext";
 import { StartMenu } from "@/components/os/StartMenu";
+import { ControlCenter } from "@/components/os/ControlCenter";
 
 export function Taskbar() {
   const { language, toggleLanguage, t } = useI18n();
-  const { windows, activeWindowId, focusWindow, showDesktop } =
-    useWindowManager();
+  const {
+    windows,
+    activeWindowId,
+    focusWindow,
+    closeWindow,
+    showDesktop,
+  } = useWindowManager();
 
   const [startOpen, setStartOpen] = useState(false);
+  const [controlOpen, setControlOpen] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -39,6 +46,11 @@ export function Taskbar() {
     }).format(now);
   }, [language, now]);
 
+  const closeFloatingPanels = () => {
+    setStartOpen(false);
+    setControlOpen(false);
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -48,9 +60,21 @@ export function Taskbar() {
               type="button"
               aria-label="Close start menu"
               className="fixed inset-0 z-[10005] cursor-default bg-transparent"
-              onPointerDown={() => setStartOpen(false)}
+              onPointerDown={closeFloatingPanels}
             />
             <StartMenu onClose={() => setStartOpen(false)} />
+          </>
+        )}
+
+        {controlOpen && (
+          <>
+            <button
+              type="button"
+              aria-label="Close control center"
+              className="fixed inset-0 z-[10005] cursor-default bg-transparent"
+              onPointerDown={closeFloatingPanels}
+            />
+            <ControlCenter onClose={() => setControlOpen(false)} />
           </>
         )}
       </AnimatePresence>
@@ -63,7 +87,10 @@ export function Taskbar() {
               "flex h-11 shrink-0 items-center gap-2 rounded-2xl border border-white/10 px-4 text-sm font-medium transition",
               startOpen ? "bg-white/15" : "bg-white/5 hover:bg-white/10"
             )}
-            onClick={() => setStartOpen((current) => !current)}
+            onClick={() => {
+              setControlOpen(false);
+              setStartOpen((current) => !current);
+            }}
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[rgba(var(--os-accent-rgb),0.22)] text-white">
               ✦
@@ -84,25 +111,57 @@ export function Taskbar() {
                   activeWindowId === osWindow.instanceId && !osWindow.minimized;
 
                 return (
-                  <button
+                  <div
                     key={osWindow.instanceId}
-                    type="button"
                     className={clsx(
-                      "flex h-11 min-w-11 max-w-48 shrink-0 items-center gap-2 rounded-2xl border px-3 text-sm transition",
+                      "group flex h-11 min-w-11 max-w-56 shrink-0 items-center gap-1 rounded-2xl border px-2 text-sm transition",
                       isActive
                         ? "border-[rgba(var(--os-accent-rgb),0.45)] bg-[rgba(var(--os-accent-rgb),0.16)] text-white"
                         : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
                     )}
-                    onClick={() => focusWindow(osWindow.instanceId)}
                     title={t(app.titleKey)}
                   >
-                    <Icon size={17} className="shrink-0" />
-                    <span className="truncate max-sm:hidden">{t(app.titleKey)}</span>
-                  </button>
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 items-center gap-2 px-1"
+                      onClick={() => focusWindow(osWindow.instanceId)}
+                    >
+                      <Icon size={17} className="shrink-0" />
+                      <span className="truncate max-sm:hidden">{t(app.titleKey)}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-slate-400 opacity-80 transition hover:bg-red-500/80 hover:text-white group-hover:opacity-100"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        closeWindow(osWindow.instanceId);
+                      }}
+                      aria-label={`Close ${t(app.titleKey)}`}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
                 );
               })
             )}
           </div>
+
+          <button
+            type="button"
+            className={clsx(
+              "flex h-11 shrink-0 items-center gap-2 rounded-2xl border border-white/10 px-3 text-sm transition",
+              controlOpen ? "bg-white/15" : "bg-white/5 hover:bg-white/10"
+            )}
+            onClick={() => {
+              setStartOpen(false);
+              setControlOpen((current) => !current);
+            }}
+            title="Control Center"
+          >
+            <SlidersHorizontal size={17} />
+            <span className="hidden lg:inline">Control</span>
+          </button>
 
           <button
             type="button"

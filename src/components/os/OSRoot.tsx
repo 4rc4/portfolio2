@@ -6,6 +6,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { BootScreen } from "@/components/os/BootScreen";
 import { CommandPalette } from "@/components/os/CommandPalette";
 import { Desktop } from "@/components/os/Desktop";
+import { DesktopWidgets } from "@/components/os/DesktopWidgets";
 import { NotificationCenter } from "@/components/os/NotificationCenter";
 import { Taskbar } from "@/components/os/Taskbar";
 import { WindowManager } from "@/components/os/WindowManager";
@@ -59,6 +60,7 @@ function OSDesktopShell() {
       {bootComplete && (
         <>
           <Desktop />
+          <DesktopWidgets />
           <WindowManager />
           <Taskbar />
           <CommandPalette />
