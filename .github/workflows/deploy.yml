@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -35,6 +35,12 @@ jobs:
 
       - name: Build static site
         run: npm run build
+
+      - name: Add nojekyll file
+        run: touch out/.nojekyll
+
+      - name: Check output folder
+        run: ls -la out
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

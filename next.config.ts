@@ -1,4 +1,3 @@
-@'
 import type { NextConfig } from "next";
 
 const repoName = "portfolio2";
@@ -15,4 +14,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-'@ | Set-Content -Encoding UTF8 next.config.ts
