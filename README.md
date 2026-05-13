@@ -47,3 +47,8 @@ Required repository setting:
 ```txt
 Settings → Pages → Source → GitHub Actions
 ```
+
+
+## Mobile desktop layout
+
+The desktop icon grid normalizes saved positions on mobile screens, so icons do not overlap when the viewport changes.

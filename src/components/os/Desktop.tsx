@@ -43,13 +43,26 @@ type DesktopIconItem = {
 const FOLDERS_STORAGE_KEY = "portfolio-os-desktop-folders";
 const ICON_CELLS_STORAGE_KEY = "portfolio-os-desktop-icon-cells";
 
-const CELL_WIDTH = 118;
-const CELL_HEIGHT = 122;
-const ICON_WIDTH = 96;
-const ICON_HEIGHT = 104;
+const DESKTOP_CELL_WIDTH = 118;
+const DESKTOP_CELL_HEIGHT = 122;
+const MOBILE_CELL_WIDTH = 150;
+const MOBILE_CELL_HEIGHT = 132;
+
+const ICON_WIDTH = 108;
+const ICON_HEIGHT = 116;
 const DESKTOP_PADDING_X = 22;
 const DESKTOP_PADDING_Y = 22;
-const TASKBAR_CLEARANCE = 86;
+const MOBILE_PADDING_X = 22;
+const MOBILE_PADDING_Y = 26;
+const TASKBAR_CLEARANCE = 96;
+
+function isMobileViewport() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.innerWidth < 640;
+}
 
 function readStoredFolders(): FolderItem[] {
   try {
@@ -106,36 +119,36 @@ function readStoredCells(): Record<string, DesktopIconCell> {
   }
 }
 
-function getDesktopBounds() {
+function getGridMetrics() {
   if (typeof window === "undefined") {
     return {
-      width: 1280,
-      height: 720,
+      columns: 4,
+      rows: 6,
+      cellWidth: DESKTOP_CELL_WIDTH,
+      cellHeight: DESKTOP_CELL_HEIGHT,
+      paddingX: DESKTOP_PADDING_X,
+      paddingY: DESKTOP_PADDING_Y,
+      isMobile: false,
     };
   }
 
-  return {
-    width: window.innerWidth,
-    height: window.innerHeight - TASKBAR_CLEARANCE,
-  };
-}
+  const mobile = window.innerWidth < 640;
+  const cellWidth = mobile ? MOBILE_CELL_WIDTH : DESKTOP_CELL_WIDTH;
+  const cellHeight = mobile ? MOBILE_CELL_HEIGHT : DESKTOP_CELL_HEIGHT;
+  const paddingX = mobile ? MOBILE_PADDING_X : DESKTOP_PADDING_X;
+  const paddingY = mobile ? MOBILE_PADDING_Y : DESKTOP_PADDING_Y;
 
-function getGridMetrics() {
-  const bounds = getDesktopBounds();
-
-  const columns = Math.max(
-    1,
-    Math.floor((bounds.width - DESKTOP_PADDING_X * 2) / CELL_WIDTH)
-  );
-
-  const rows = Math.max(
-    1,
-    Math.floor((bounds.height - DESKTOP_PADDING_Y * 2) / CELL_HEIGHT)
-  );
+  const usableWidth = Math.max(1, window.innerWidth - paddingX * 2);
+  const usableHeight = Math.max(1, window.innerHeight - TASKBAR_CLEARANCE - paddingY * 2);
 
   return {
-    columns,
-    rows,
+    columns: Math.max(1, Math.floor(usableWidth / cellWidth)),
+    rows: Math.max(1, Math.floor(usableHeight / cellHeight)),
+    cellWidth,
+    cellHeight,
+    paddingX,
+    paddingY,
+    isMobile: mobile,
   };
 }
 
@@ -158,18 +171,21 @@ function getDefaultIconCell(index: number): DesktopIconCell {
 }
 
 function cellToPosition(cell: DesktopIconCell) {
+  const metrics = getGridMetrics();
   const clampedCell = clampCell(cell);
 
   return {
-    x: DESKTOP_PADDING_X + clampedCell.column * CELL_WIDTH,
-    y: DESKTOP_PADDING_Y + clampedCell.row * CELL_HEIGHT,
+    x: metrics.paddingX + clampedCell.column * metrics.cellWidth,
+    y: metrics.paddingY + clampedCell.row * metrics.cellHeight,
   };
 }
 
 function pointerToCell(clientX: number, clientY: number): DesktopIconCell {
+  const metrics = getGridMetrics();
+
   return clampCell({
-    column: Math.round((clientX - DESKTOP_PADDING_X - ICON_WIDTH / 2) / CELL_WIDTH),
-    row: Math.round((clientY - DESKTOP_PADDING_Y - ICON_HEIGHT / 2) / CELL_HEIGHT),
+    column: Math.round((clientX - metrics.paddingX - ICON_WIDTH / 2) / metrics.cellWidth),
+    row: Math.round((clientY - metrics.paddingY - ICON_HEIGHT / 2) / metrics.cellHeight),
   });
 }
 
@@ -201,6 +217,32 @@ function findFreeCell(
   return first;
 }
 
+function normalizeIconCells(
+  items: DesktopIconItem[],
+  cells: Record<string, DesktopIconCell>
+): Record<string, DesktopIconCell> {
+  const metrics = getGridMetrics();
+  const nextCells: Record<string, DesktopIconCell> = {};
+  const occupied = new Set<string>();
+
+  items.forEach((item, index) => {
+    const storedCell = cells[item.id];
+    const wantedCell =
+      metrics.isMobile
+        ? getDefaultIconCell(index)
+        : storedCell
+          ? clampCell(storedCell)
+          : getDefaultIconCell(index);
+
+    const finalCell = findFreeCell(wantedCell, occupied);
+
+    nextCells[item.id] = finalCell;
+    occupied.add(`${finalCell.column}:${finalCell.row}`);
+  });
+
+  return nextCells;
+}
+
 export function Desktop() {
   const { t } = useI18n();
   const { openApp } = useWindowManager();
@@ -211,23 +253,54 @@ export function Desktop() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [iconCells, setIconCells] = useState<Record<string, DesktopIconCell>>({});
   const [mounted, setMounted] = useState(false);
+  const [layoutTick, setLayoutTick] = useState(0);
 
   const dragStateRef = useRef<{
     iconId: string;
     startX: number;
     startY: number;
     startCell: DesktopIconCell;
-    previewCell: DesktopIconCell;
     moved: boolean;
   } | null>(null);
 
   const lastClickRef = useRef<Record<string, number>>({});
+
+  const desktopItems = useMemo<DesktopIconItem[]>(() => {
+    const appItems: DesktopIconItem[] = desktopAppIds.map((appId) => {
+      const app = appRegistry[appId];
+
+      return {
+        id: app.id,
+        kind: "app",
+        title: t(app.titleKey),
+        appId: app.id,
+        icon: app.icon,
+      };
+    });
+
+    const folderItems: DesktopIconItem[] = folders.map((folder) => ({
+      id: folder.id,
+      kind: "folder",
+      title: folder.name,
+      icon: Folder,
+    }));
+
+    return [...appItems, ...folderItems];
+  }, [folders, t]);
 
   useEffect(() => {
     setFolders(readStoredFolders());
     setIconCells(readStoredCells());
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) {
+      return;
+    }
+
+    setIconCells((currentCells) => normalizeIconCells(desktopItems, currentCells));
+  }, [desktopItems, layoutTick, mounted]);
 
   useEffect(() => {
     if (!mounted) {
@@ -262,44 +335,17 @@ export function Desktop() {
 
   useEffect(() => {
     const handleResize = () => {
-      setIconCells((currentCells) => {
-        const nextCells: Record<string, DesktopIconCell> = {};
-
-        Object.entries(currentCells).forEach(([id, cell]) => {
-          nextCells[id] = clampCell(cell);
-        });
-
-        return nextCells;
-      });
+      setLayoutTick((current) => current + 1);
     };
 
     window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
 
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+    };
   }, []);
-
-  const desktopItems = useMemo<DesktopIconItem[]>(() => {
-    const appItems: DesktopIconItem[] = desktopAppIds.map((appId) => {
-      const app = appRegistry[appId];
-
-      return {
-        id: app.id,
-        kind: "app",
-        title: t(app.titleKey),
-        appId: app.id,
-        icon: app.icon,
-      };
-    });
-
-    const folderItems: DesktopIconItem[] = folders.map((folder) => ({
-      id: folder.id,
-      kind: "folder",
-      title: folder.name,
-      icon: Folder,
-    }));
-
-    return [...appItems, ...folderItems];
-  }, [folders, t]);
 
   const getIconCell = (itemId: string, index: number) => {
     return clampCell(iconCells[itemId] ?? getDefaultIconCell(index));
@@ -355,7 +401,6 @@ export function Desktop() {
       startX: event.clientX,
       startY: event.clientY,
       startCell: currentCell,
-      previewCell: currentCell,
       moved: false,
     };
 
@@ -374,7 +419,6 @@ export function Desktop() {
       }
 
       const previewCell = pointerToCell(moveEvent.clientX, moveEvent.clientY);
-      dragState.previewCell = previewCell;
 
       setIconCells((currentCells) => ({
         ...currentCells,
@@ -429,14 +473,30 @@ export function Desktop() {
   };
 
   const resetIconPositions = () => {
-    setIconCells({});
+    window.localStorage.removeItem(ICON_CELLS_STORAGE_KEY);
+    setIconCells(normalizeIconCells(desktopItems, {}));
   };
 
-  const metrics = mounted ? getGridMetrics() : { columns: 1, rows: 8 };
-  const desktopWidth = Math.max(
-    window.innerWidth,
-    DESKTOP_PADDING_X * 2 + metrics.columns * CELL_WIDTH
+  const metrics = mounted ? getGridMetrics() : {
+    columns: 2,
+    rows: 5,
+    cellWidth: MOBILE_CELL_WIDTH,
+    cellHeight: MOBILE_CELL_HEIGHT,
+    paddingX: MOBILE_PADDING_X,
+    paddingY: MOBILE_PADDING_Y,
+    isMobile: true,
+  };
+
+  const requiredColumns = Math.max(
+    metrics.columns,
+    Math.ceil(desktopItems.length / Math.max(metrics.rows, 1))
   );
+
+  const desktopWidth =
+    metrics.paddingX * 2 + requiredColumns * metrics.cellWidth;
+
+  const desktopHeight =
+    metrics.paddingY * 2 + metrics.rows * metrics.cellHeight;
 
   return (
     <section
@@ -452,9 +512,10 @@ export function Desktop() {
       }}
     >
       <div
-        className="relative min-h-[calc(100dvh-86px)]"
+        className="relative"
         style={{
-          width: desktopWidth,
+          width: Math.max(window.innerWidth, desktopWidth),
+          minHeight: Math.max(window.innerHeight - TASKBAR_CLEARANCE, desktopHeight),
         }}
       >
         {desktopItems.map((item, index) => {
@@ -468,7 +529,7 @@ export function Desktop() {
               key={item.id}
               type="button"
               className={clsx(
-                "absolute flex w-24 touch-none select-none flex-col items-center gap-2 rounded-2xl p-2 text-center text-white outline-none transition-[background,border-color,box-shadow,left,top] duration-100 focus-visible:bg-white/10",
+                "absolute flex w-[108px] touch-none select-none flex-col items-center gap-2 rounded-2xl p-2 text-center text-white outline-none transition-[background,border-color,box-shadow,left,top] duration-100 focus-visible:bg-white/10",
                 isSelected ? "bg-white/15" : "hover:bg-white/10"
               )}
               style={{
@@ -497,16 +558,16 @@ export function Desktop() {
             >
               <span
                 className={clsx(
-                  "flex h-14 w-14 items-center justify-center rounded-2xl border shadow-xl backdrop-blur-md transition",
+                  "flex h-16 w-16 items-center justify-center rounded-2xl border shadow-xl backdrop-blur-md transition",
                   isSelected
                     ? "border-[rgba(var(--os-accent-rgb),0.55)] bg-[rgba(var(--os-accent-rgb),0.18)]"
                     : "border-white/10 bg-slate-950/35 hover:bg-white/15"
                 )}
               >
-                <Icon size={28} />
+                <Icon size={30} />
               </span>
 
-              <span className="line-clamp-2 text-xs font-semibold drop-shadow">
+              <span className="line-clamp-2 text-sm font-semibold leading-tight drop-shadow">
                 {item.title}
               </span>
             </button>
