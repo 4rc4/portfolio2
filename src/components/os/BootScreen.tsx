@@ -156,8 +156,8 @@ export function BootScreen({ onComplete }: BootScreenProps) {
             </div>
           ) : (
             <div className="text-slate-400">
-              <p>Portfolio OS v0.5</p>
-              <p className="mt-1">Press start to initialize the interface.</p>
+              <p>Portfolio OS</p>
+              <p className="mt-1">Press start to enter the portfolio.</p>
             </div>
           )}
         </div>

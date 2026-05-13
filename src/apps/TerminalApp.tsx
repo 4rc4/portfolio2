@@ -37,7 +37,7 @@ export function TerminalApp({ launchData }: AppComponentProps) {
   const [currentPath, setCurrentPath] = useState(initialPath);
   const [input, setInput] = useState("");
   const [lines, setLines] = useState<TerminalLine[]>([
-    createLine("output", "Portfolio OS Terminal v0.7"),
+    createLine("output", "Portfolio OS Terminal"),
     createLine("output", "Type `help` or `neofetch` to start."),
   ]);
 

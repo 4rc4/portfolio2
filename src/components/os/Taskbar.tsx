@@ -42,7 +42,17 @@ export function Taskbar() {
   return (
     <>
       <AnimatePresence>
-        {startOpen && <StartMenu onClose={() => setStartOpen(false)} />}
+        {startOpen && (
+          <>
+            <button
+              type="button"
+              aria-label="Close start menu"
+              className="fixed inset-0 z-[10005] cursor-default bg-transparent"
+              onPointerDown={() => setStartOpen(false)}
+            />
+            <StartMenu onClose={() => setStartOpen(false)} />
+          </>
+        )}
       </AnimatePresence>
 
       <footer className="fixed bottom-0 left-0 right-0 z-[10000] border-t border-white/10 bg-slate-950/70 px-3 py-2 text-white shadow-2xl backdrop-blur-xl">

@@ -27,9 +27,9 @@ type ContextMenuState = {
   y: number;
 } | null;
 
-type DesktopIconPosition = {
-  x: number;
-  y: number;
+type DesktopIconCell = {
+  column: number;
+  row: number;
 };
 
 type DesktopIconItem = {
@@ -41,13 +41,14 @@ type DesktopIconItem = {
 };
 
 const FOLDERS_STORAGE_KEY = "portfolio-os-desktop-folders";
-const ICON_POSITIONS_STORAGE_KEY = "portfolio-os-desktop-icon-positions";
+const ICON_CELLS_STORAGE_KEY = "portfolio-os-desktop-icon-cells";
 
+const CELL_WIDTH = 118;
+const CELL_HEIGHT = 122;
 const ICON_WIDTH = 96;
 const ICON_HEIGHT = 104;
-const ICON_GAP_X = 22;
-const ICON_GAP_Y = 18;
-const DESKTOP_PADDING = 22;
+const DESKTOP_PADDING_X = 22;
+const DESKTOP_PADDING_Y = 22;
 const TASKBAR_CLEARANCE = 86;
 
 function readStoredFolders(): FolderItem[] {
@@ -73,9 +74,9 @@ function readStoredFolders(): FolderItem[] {
   }
 }
 
-function readStoredPositions(): Record<string, DesktopIconPosition> {
+function readStoredCells(): Record<string, DesktopIconCell> {
   try {
-    const rawValue = window.localStorage.getItem(ICON_POSITIONS_STORAGE_KEY);
+    const rawValue = window.localStorage.getItem(ICON_CELLS_STORAGE_KEY);
 
     if (!rawValue) {
       return {};
@@ -88,15 +89,15 @@ function readStoredPositions(): Record<string, DesktopIconPosition> {
     }
 
     return Object.fromEntries(
-      Object.entries(parsedValue).filter((entry): entry is [string, DesktopIconPosition] => {
+      Object.entries(parsedValue).filter((entry): entry is [string, DesktopIconCell] => {
         const value = entry[1];
 
         return (
           typeof entry[0] === "string" &&
           typeof value === "object" &&
           value !== null &&
-          typeof (value as DesktopIconPosition).x === "number" &&
-          typeof (value as DesktopIconPosition).y === "number"
+          Number.isInteger((value as DesktopIconCell).column) &&
+          Number.isInteger((value as DesktopIconCell).row)
         );
       })
     );
@@ -119,40 +120,85 @@ function getDesktopBounds() {
   };
 }
 
-function clampIconPosition(position: DesktopIconPosition): DesktopIconPosition {
+function getGridMetrics() {
   const bounds = getDesktopBounds();
 
+  const columns = Math.max(
+    1,
+    Math.floor((bounds.width - DESKTOP_PADDING_X * 2) / CELL_WIDTH)
+  );
+
+  const rows = Math.max(
+    1,
+    Math.floor((bounds.height - DESKTOP_PADDING_Y * 2) / CELL_HEIGHT)
+  );
+
   return {
-    x: Math.max(
-      DESKTOP_PADDING,
-      Math.min(position.x, Math.max(DESKTOP_PADDING, bounds.width - ICON_WIDTH - DESKTOP_PADDING))
-    ),
-    y: Math.max(
-      DESKTOP_PADDING,
-      Math.min(position.y, Math.max(DESKTOP_PADDING, bounds.height - ICON_HEIGHT - DESKTOP_PADDING))
-    ),
+    columns,
+    rows,
   };
 }
 
-function getDefaultIconPosition(index: number): DesktopIconPosition {
-  const bounds = getDesktopBounds();
+function clampCell(cell: DesktopIconCell): DesktopIconCell {
+  const metrics = getGridMetrics();
 
-  const usableHeight = Math.max(ICON_HEIGHT, bounds.height - DESKTOP_PADDING * 2);
-  const rowHeight = ICON_HEIGHT + ICON_GAP_Y;
-  const columnWidth = ICON_WIDTH + ICON_GAP_X;
+  return {
+    column: Math.max(0, Math.min(cell.column, metrics.columns - 1)),
+    row: Math.max(0, Math.min(cell.row, metrics.rows - 1)),
+  };
+}
 
-  const itemsPerColumn = Math.max(1, Math.floor(usableHeight / rowHeight));
-  const column = Math.floor(index / itemsPerColumn);
-  const row = index % itemsPerColumn;
+function getDefaultIconCell(index: number): DesktopIconCell {
+  const metrics = getGridMetrics();
 
-  return clampIconPosition({
-    x: DESKTOP_PADDING + column * columnWidth,
-    y: DESKTOP_PADDING + row * rowHeight,
+  return {
+    column: Math.floor(index / metrics.rows),
+    row: index % metrics.rows,
+  };
+}
+
+function cellToPosition(cell: DesktopIconCell) {
+  const clampedCell = clampCell(cell);
+
+  return {
+    x: DESKTOP_PADDING_X + clampedCell.column * CELL_WIDTH,
+    y: DESKTOP_PADDING_Y + clampedCell.row * CELL_HEIGHT,
+  };
+}
+
+function pointerToCell(clientX: number, clientY: number): DesktopIconCell {
+  return clampCell({
+    column: Math.round((clientX - DESKTOP_PADDING_X - ICON_WIDTH / 2) / CELL_WIDTH),
+    row: Math.round((clientY - DESKTOP_PADDING_Y - ICON_HEIGHT / 2) / CELL_HEIGHT),
   });
 }
 
 function isDoubleClick(lastClickTime: number) {
   return Date.now() - lastClickTime < 280;
+}
+
+function findFreeCell(
+  preferredCell: DesktopIconCell,
+  occupied: Set<string>
+): DesktopIconCell {
+  const metrics = getGridMetrics();
+  const first = clampCell(preferredCell);
+
+  if (!occupied.has(`${first.column}:${first.row}`)) {
+    return first;
+  }
+
+  for (let column = 0; column < metrics.columns; column += 1) {
+    for (let row = 0; row < metrics.rows; row += 1) {
+      const key = `${column}:${row}`;
+
+      if (!occupied.has(key)) {
+        return { column, row };
+      }
+    }
+  }
+
+  return first;
 }
 
 export function Desktop() {
@@ -163,14 +209,15 @@ export function Desktop() {
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [iconPositions, setIconPositions] = useState<Record<string, DesktopIconPosition>>({});
+  const [iconCells, setIconCells] = useState<Record<string, DesktopIconCell>>({});
   const [mounted, setMounted] = useState(false);
 
   const dragStateRef = useRef<{
     iconId: string;
     startX: number;
     startY: number;
-    startPosition: DesktopIconPosition;
+    startCell: DesktopIconCell;
+    previewCell: DesktopIconCell;
     moved: boolean;
   } | null>(null);
 
@@ -178,7 +225,7 @@ export function Desktop() {
 
   useEffect(() => {
     setFolders(readStoredFolders());
-    setIconPositions(readStoredPositions());
+    setIconCells(readStoredCells());
     setMounted(true);
   }, []);
 
@@ -196,10 +243,10 @@ export function Desktop() {
     }
 
     window.localStorage.setItem(
-      ICON_POSITIONS_STORAGE_KEY,
-      JSON.stringify(iconPositions)
+      ICON_CELLS_STORAGE_KEY,
+      JSON.stringify(iconCells)
     );
-  }, [iconPositions, mounted]);
+  }, [iconCells, mounted]);
 
   useEffect(() => {
     const closeContextMenu = () => setContextMenu(null);
@@ -215,14 +262,14 @@ export function Desktop() {
 
   useEffect(() => {
     const handleResize = () => {
-      setIconPositions((currentPositions) => {
-        const nextPositions: Record<string, DesktopIconPosition> = {};
+      setIconCells((currentCells) => {
+        const nextCells: Record<string, DesktopIconCell> = {};
 
-        Object.entries(currentPositions).forEach(([id, position]) => {
-          nextPositions[id] = clampIconPosition(position);
+        Object.entries(currentCells).forEach(([id, cell]) => {
+          nextCells[id] = clampCell(cell);
         });
 
-        return nextPositions;
+        return nextCells;
       });
     };
 
@@ -254,13 +301,22 @@ export function Desktop() {
     return [...appItems, ...folderItems];
   }, [folders, t]);
 
-  const getIconPosition = (itemId: string, index: number) => {
-    return iconPositions[itemId] ?? getDefaultIconPosition(index);
+  const getIconCell = (itemId: string, index: number) => {
+    return clampCell(iconCells[itemId] ?? getDefaultIconCell(index));
   };
 
   const createFolder = () => {
     const nextNumber = folders.length + 1;
     const folderId = `folder-${Date.now()}`;
+
+    const occupied = new Set(
+      desktopItems.map((item, index) => {
+        const cell = getIconCell(item.id, index);
+        return `${cell.column}:${cell.row}`;
+      })
+    );
+
+    const newCell = findFreeCell(getDefaultIconCell(desktopItems.length), occupied);
 
     setFolders((currentFolders) => [
       ...currentFolders,
@@ -273,9 +329,9 @@ export function Desktop() {
       },
     ]);
 
-    setIconPositions((currentPositions) => ({
-      ...currentPositions,
-      [folderId]: getDefaultIconPosition(desktopItems.length),
+    setIconCells((currentCells) => ({
+      ...currentCells,
+      [folderId]: newCell,
     }));
   };
 
@@ -292,13 +348,14 @@ export function Desktop() {
 
     setSelectedItemId(item.id);
 
-    const currentPosition = getIconPosition(item.id, index);
+    const currentCell = getIconCell(item.id, index);
 
     dragStateRef.current = {
       iconId: item.id,
       startX: event.clientX,
       startY: event.clientY,
-      startPosition: currentPosition,
+      startCell: currentCell,
+      previewCell: currentCell,
       moved: false,
     };
 
@@ -316,19 +373,40 @@ export function Desktop() {
         dragState.moved = true;
       }
 
-      const nextPosition = clampIconPosition({
-        x: dragState.startPosition.x + deltaX,
-        y: dragState.startPosition.y + deltaY,
-      });
+      const previewCell = pointerToCell(moveEvent.clientX, moveEvent.clientY);
+      dragState.previewCell = previewCell;
 
-      setIconPositions((currentPositions) => ({
-        ...currentPositions,
-        [dragState.iconId]: nextPosition,
+      setIconCells((currentCells) => ({
+        ...currentCells,
+        [dragState.iconId]: previewCell,
       }));
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (upEvent: PointerEvent) => {
       const dragState = dragStateRef.current;
+
+      if (dragState && dragState.moved) {
+        const occupied = new Set<string>();
+
+        desktopItems.forEach((desktopItem, itemIndex) => {
+          if (desktopItem.id === dragState.iconId) {
+            return;
+          }
+
+          const cell = getIconCell(desktopItem.id, itemIndex);
+          occupied.add(`${cell.column}:${cell.row}`);
+        });
+
+        const finalCell = findFreeCell(
+          pointerToCell(upEvent.clientX, upEvent.clientY),
+          occupied
+        );
+
+        setIconCells((currentCells) => ({
+          ...currentCells,
+          [dragState.iconId]: finalCell,
+        }));
+      }
 
       if (dragState && !dragState.moved && item.kind === "app" && item.appId) {
         const previousClick = lastClickRef.current[item.id] ?? 0;
@@ -351,8 +429,14 @@ export function Desktop() {
   };
 
   const resetIconPositions = () => {
-    setIconPositions({});
+    setIconCells({});
   };
+
+  const metrics = mounted ? getGridMetrics() : { columns: 1, rows: 8 };
+  const desktopWidth = Math.max(
+    window.innerWidth,
+    DESKTOP_PADDING_X * 2 + metrics.columns * CELL_WIDTH
+  );
 
   return (
     <section
@@ -368,22 +452,23 @@ export function Desktop() {
       }}
     >
       <div
-        className="relative min-h-[calc(100dvh-86px)] min-w-full"
+        className="relative min-h-[calc(100dvh-86px)]"
         style={{
-          width: "max(100%, 920px)",
+          width: desktopWidth,
         }}
       >
         {desktopItems.map((item, index) => {
           const Icon = item.icon ?? Folder;
           const isSelected = selectedItemId === item.id;
-          const position = getIconPosition(item.id, index);
+          const cell = getIconCell(item.id, index);
+          const position = cellToPosition(cell);
 
           return (
             <button
               key={item.id}
               type="button"
               className={clsx(
-                "absolute flex w-24 touch-none select-none flex-col items-center gap-2 rounded-2xl p-2 text-center text-white outline-none transition focus-visible:bg-white/10",
+                "absolute flex w-24 touch-none select-none flex-col items-center gap-2 rounded-2xl p-2 text-center text-white outline-none transition-[background,border-color,box-shadow,left,top] duration-100 focus-visible:bg-white/10",
                 isSelected ? "bg-white/15" : "hover:bg-white/10"
               )}
               style={{

@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { Maximize2, Minus, Square, X } from "lucide-react";
 import {
-  useEffect,
   useRef,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -17,6 +16,29 @@ import type { OSWindow, WindowPosition, WindowSize } from "@/types/window";
 type WindowProps = {
   osWindow: OSWindow;
 };
+
+const TASKBAR_HEIGHT = 64;
+const SCREEN_PADDING = 10;
+
+function clampWindowPosition(position: WindowPosition, size: WindowSize) {
+  if (typeof window === "undefined") {
+    return position;
+  }
+
+  return {
+    x: Math.max(
+      0,
+      Math.min(position.x, Math.max(0, window.innerWidth - Math.min(size.width, 160)))
+    ),
+    y: Math.max(
+      0,
+      Math.min(
+        position.y,
+        Math.max(0, window.innerHeight - TASKBAR_HEIGHT - 44)
+      )
+    ),
+  };
+}
 
 export function Window({ osWindow }: WindowProps) {
   const { t } = useI18n();
@@ -32,7 +54,6 @@ export function Window({ osWindow }: WindowProps) {
   } = useWindowManager();
 
   const dragStateRef = useRef<{
-    pointerId: number;
     startX: number;
     startY: number;
     startPosition: WindowPosition;
@@ -53,52 +74,16 @@ export function Window({ osWindow }: WindowProps) {
   const Icon = app.icon;
   const title = app.titleKey ? t(app.titleKey) : osWindow.title;
 
-  useEffect(() => {
-    const handlePointerMove = (event: PointerEvent) => {
-      const dragState = dragStateRef.current;
-
-      if (!dragState) {
-        return;
-      }
-
-      const nextX = dragState.startPosition.x + (event.clientX - dragState.startX);
-      const nextY = dragState.startPosition.y + (event.clientY - dragState.startY);
-
-      updateWindowPosition(osWindow.instanceId, {
-        x: Math.max(0, Math.min(nextX, window.innerWidth - 120)),
-        y: Math.max(0, Math.min(nextY, window.innerHeight - 92)),
-      });
-    };
-
-    const handlePointerUp = () => {
-      dragStateRef.current = null;
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-    };
-
-    if (dragStateRef.current) {
-      window.addEventListener("pointermove", handlePointerMove);
-      window.addEventListener("pointerup", handlePointerUp);
-    }
-
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-    };
-  }, [osWindow.instanceId, updateWindowPosition]);
-
   const getMaximizedBounds = () => {
-    const taskbarHeight = 64;
-    const padding = 10;
+    const availableWidth = window.innerWidth - SCREEN_PADDING * 2;
+    const availableHeight =
+      window.innerHeight - TASKBAR_HEIGHT - SCREEN_PADDING * 2;
 
     return {
-      position: { x: padding, y: padding },
+      position: { x: SCREEN_PADDING, y: SCREEN_PADDING },
       size: {
-        width: Math.max(window.innerWidth - padding * 2, osWindow.minSize.width),
-        height: Math.max(
-          window.innerHeight - taskbarHeight - padding * 2,
-          osWindow.minSize.height
-        ),
+        width: Math.max(availableWidth, osWindow.minSize.width),
+        height: Math.max(availableHeight, osWindow.minSize.height),
       },
     };
   };
@@ -116,14 +101,40 @@ export function Window({ osWindow }: WindowProps) {
       return;
     }
 
-    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
 
     dragStateRef.current = {
-      pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
       startPosition: osWindow.position,
     };
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const dragState = dragStateRef.current;
+
+      if (!dragState) {
+        return;
+      }
+
+      const nextPosition = clampWindowPosition(
+        {
+          x: dragState.startPosition.x + (moveEvent.clientX - dragState.startX),
+          y: dragState.startPosition.y + (moveEvent.clientY - dragState.startY),
+        },
+        osWindow.size
+      );
+
+      updateWindowPosition(osWindow.instanceId, nextPosition);
+    };
+
+    const handlePointerUp = () => {
+      dragStateRef.current = null;
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
   };
 
   const handleResizePointerDown = (
@@ -151,15 +162,23 @@ export function Window({ osWindow }: WindowProps) {
         return;
       }
 
-      const nextWidth =
-        resizeState.startSize.width + (moveEvent.clientX - resizeState.startX);
+      const maxWidth = window.innerWidth - osWindow.position.x - SCREEN_PADDING;
+      const maxHeight =
+        window.innerHeight - osWindow.position.y - TASKBAR_HEIGHT - SCREEN_PADDING;
 
-      const nextHeight =
-        resizeState.startSize.height + (moveEvent.clientY - resizeState.startY);
+      const nextWidth = Math.min(
+        resizeState.startSize.width + (moveEvent.clientX - resizeState.startX),
+        maxWidth
+      );
+
+      const nextHeight = Math.min(
+        resizeState.startSize.height + (moveEvent.clientY - resizeState.startY),
+        maxHeight
+      );
 
       updateWindowSize(osWindow.instanceId, {
-        width: Math.min(nextWidth, window.innerWidth - osWindow.position.x - 12),
-        height: Math.min(nextHeight, window.innerHeight - osWindow.position.y - 76),
+        width: nextWidth,
+        height: nextHeight,
       });
     };
 

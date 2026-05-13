@@ -43,7 +43,7 @@ export function DesktopContextMenu({
       action: onCreateFolder,
     },
     {
-      label: "Reset icon positions",
+      label: t("desktop.resetIconPositions"),
       icon: RotateCcw,
       action: onResetIconPositions,
     },

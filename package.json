@@ -1,6 +1,6 @@
 {
-  "name": "portfolio-os-phase-7-full-upgrade",
-  "version": "0.7.0",
+  "name": "portfolio-os",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "dev": "next dev",

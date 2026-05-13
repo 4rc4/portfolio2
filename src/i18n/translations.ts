@@ -8,7 +8,7 @@ export const languages: Record<Language, string> = {
 export const translations = {
   tr: {
     "system.name": "Portfolio OS",
-    "system.phase": "Faz 7",
+    "system.phase": "Interactive Portfolio",
     "system.desktop": "Masaüstü",
 
     "boot.title": "Portfolio OS",
@@ -39,6 +39,7 @@ export const translations = {
     "desktop.folder": "Yeni Klasör",
     "desktop.folderHint": "Bu demo klasörü masaüstü üzerinde durur.",
     "desktop.openTerminalHere": "Terminali burada aç",
+    "desktop.resetIconPositions": "İkonları düzenle",
 
     "taskbar.start": "Başlat",
     "taskbar.showDesktop": "Masaüstünü göster",
@@ -183,7 +184,7 @@ export const translations = {
 
   en: {
     "system.name": "Portfolio OS",
-    "system.phase": "Phase 7",
+    "system.phase": "Interactive Portfolio",
     "system.desktop": "Desktop",
 
     "boot.title": "Portfolio OS",
@@ -214,6 +215,7 @@ export const translations = {
     "desktop.folder": "New Folder",
     "desktop.folderHint": "This demo folder stays on the desktop.",
     "desktop.openTerminalHere": "Open Terminal Here",
+    "desktop.resetIconPositions": "Arrange icons",
 
     "taskbar.start": "Start",
     "taskbar.showDesktop": "Show desktop",

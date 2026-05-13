@@ -1,28 +1,49 @@
-# Portfolio OS — Phase 7 Desktop Icons Fix
+# Portfolio OS
 
-Bu paket desktop ikonları ve taskbar taşma sorununu düzeltir.
+Interactive web-based portfolio interface for Yusuf Arca Çiçek.
 
-## Fix edilenler
+## Features
 
-- Desktop uygulama ikonları artık sürüklenebilir.
-- İkon pozisyonları localStorage'a kaydedilir.
-- Yeni açılışta ikonlar eski yerinde kalır.
-- İkonlar taskbar'ın altına girmeyecek şekilde sınırlandırılır.
-- İlk yerleşim artık tek uzun kolon değil; ekran yüksekliği yetmezse sağ kolona geçer.
-- Dar ekranlarda desktop alanı taskbar üstünde kalır ve scroll destekler.
-- Tek tık seçer, çift tık uygulamayı açar.
+- Web-based desktop interface
+- Window manager
+- Start menu and taskbar
+- Bilingual TR / EN content
+- Project viewer
+- CV, skills, experience and contact apps
+- Terminal-style portfolio commands
+- File explorer with portfolio files
+- Custom wallpaper support
+- GitHub Pages deployment setup
 
-## Kurulum
-
-Zip içindeki `portfolio-os-phase-7-desktop-icons-fix` klasörünün içeriğini mevcut projenin üstüne kopyala:
-
-```txt
-C:\Users\arca\portfolio-os
-```
-
-Sonra:
+## Local development
 
 ```bash
 npm install
 npm run dev
+```
+
+## Static build
+
+```bash
+npm run build
+```
+
+The static output is generated in:
+
+```txt
+out/
+```
+
+## GitHub Pages
+
+This project is configured for:
+
+```txt
+https://4rc4.github.io/portfolio2/
+```
+
+Required repository setting:
+
+```txt
+Settings → Pages → Source → GitHub Actions
 ```
