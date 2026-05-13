@@ -180,9 +180,9 @@ export function Window({ osWindow }: WindowProps) {
   return (
     <motion.div
       className={clsx(
-        "absolute flex overflow-hidden rounded-2xl border shadow-2xl",
+        "fixed flex overflow-hidden rounded-2xl border shadow-2xl",
         "bg-slate-950/50 text-white backdrop-blur-md",
-        "max-sm:!left-0 max-sm:!top-0 max-sm:!h-[calc(100vh-64px)] max-sm:!w-screen max-sm:rounded-none",
+        "max-sm:!left-0 max-sm:!top-0 max-sm:!h-[calc(100dvh-64px)] max-sm:!w-dvw max-sm:rounded-none",
         isActive
           ? "border-[rgba(var(--os-accent-rgb),0.45)] shadow-[0_30px_100px_rgba(var(--os-accent-rgb),0.16)]"
           : "border-white/10 shadow-black/30"
@@ -203,7 +203,7 @@ export function Window({ osWindow }: WindowProps) {
       transition={{ duration: 0.16 }}
       onPointerDown={() => focusWindow(osWindow.instanceId)}
     >
-      <div className="flex h-full w-full flex-col">
+      <div className="flex h-full min-w-0 w-full flex-col">
         <div
           className={clsx(
             "flex h-11 shrink-0 items-center justify-between border-b px-3",
@@ -224,7 +224,7 @@ export function Window({ osWindow }: WindowProps) {
           </div>
 
           <div
-            className="flex items-center gap-1"
+            className="flex shrink-0 items-center gap-1"
             onPointerDown={(event) => event.stopPropagation()}
           >
             <button
@@ -263,7 +263,7 @@ export function Window({ osWindow }: WindowProps) {
           </div>
         </div>
 
-        <div className="relative min-h-0 flex-1 overflow-auto p-4">
+        <div className="relative min-h-0 min-w-0 flex-1 overflow-auto p-4">
           <AppComponent
             windowId={osWindow.instanceId}
             launchData={osWindow.launchData}

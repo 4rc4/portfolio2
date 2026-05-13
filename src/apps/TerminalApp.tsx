@@ -301,24 +301,24 @@ export function TerminalApp({ launchData }: AppComponentProps) {
 
   return (
     <div
-      className="flex h-full min-h-0 flex-col rounded-lg bg-black/70 p-4 font-mono text-sm text-emerald-300"
+      className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg bg-black/70 p-4 font-mono text-sm text-emerald-300"
       onClick={() => inputRef.current?.focus()}
     >
-      <div className="mb-3 border-b border-emerald-300/20 pb-3">
+      <div className="mb-3 shrink-0 border-b border-emerald-300/20 pb-3">
         <p>{t("terminal.heading")}</p>
         <p className="mt-1 text-xs text-slate-400">{t("terminal.placeholder")}</p>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto pr-1">
+      <div className="min-h-0 min-w-0 flex-1 overflow-auto pr-1">
         {lines.map((line) => (
           <div
             key={line.id}
             className={
               line.kind === "error"
-                ? "whitespace-pre-wrap text-red-300"
+                ? "whitespace-pre-wrap break-words text-red-300"
                 : line.kind === "input"
-                  ? "whitespace-pre-wrap text-cyan-200"
-                  : "whitespace-pre-wrap text-emerald-300"
+                  ? "whitespace-pre-wrap break-words text-cyan-200"
+                  : "whitespace-pre-wrap break-words text-emerald-300"
             }
           >
             {line.text}
@@ -328,7 +328,7 @@ export function TerminalApp({ launchData }: AppComponentProps) {
       </div>
 
       <form
-        className="mt-3 flex items-center gap-2 border-t border-emerald-300/20 pt-3"
+        className="mt-3 shrink-0 border-t border-emerald-300/20 pt-3"
         onSubmit={(event) => {
           event.preventDefault();
           runCommand(input);
@@ -339,20 +339,22 @@ export function TerminalApp({ launchData }: AppComponentProps) {
           {t("terminal.inputLabel")}
         </label>
 
-        <span className="shrink-0 text-cyan-200">
-          {t("terminal.prompt")}:{currentPath}$
-        </span>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="max-w-full break-all text-cyan-200">
+            {t("terminal.prompt")}:{currentPath}$
+          </span>
 
-        <input
-          id="terminal-input"
-          ref={inputRef}
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-emerald-100 outline-none placeholder:text-slate-600"
-          placeholder="neofetch"
-          autoComplete="off"
-          spellCheck={false}
-        />
+          <input
+            id="terminal-input"
+            ref={inputRef}
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            className="min-w-[160px] flex-1 bg-transparent text-emerald-100 outline-none placeholder:text-slate-600"
+            placeholder="neofetch"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
       </form>
     </div>
   );

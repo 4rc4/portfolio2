@@ -45,12 +45,12 @@ export function Taskbar() {
         {startOpen && <StartMenu onClose={() => setStartOpen(false)} />}
       </AnimatePresence>
 
-      <footer className="absolute bottom-0 left-0 right-0 z-[10000] border-t border-white/10 bg-slate-950/55 px-3 py-2 text-white shadow-2xl backdrop-blur-xl">
-        <div className="flex items-center gap-2">
+      <footer className="fixed bottom-0 left-0 right-0 z-[10000] border-t border-white/10 bg-slate-950/70 px-3 py-2 text-white shadow-2xl backdrop-blur-xl">
+        <div className="flex h-12 items-center gap-2">
           <button
             type="button"
             className={clsx(
-              "flex h-11 items-center gap-2 rounded-2xl border border-white/10 px-4 text-sm font-medium transition",
+              "flex h-11 shrink-0 items-center gap-2 rounded-2xl border border-white/10 px-4 text-sm font-medium transition",
               startOpen ? "bg-white/15" : "bg-white/5 hover:bg-white/10"
             )}
             onClick={() => setStartOpen((current) => !current)}
@@ -61,7 +61,7 @@ export function Taskbar() {
             <span>{t("taskbar.start")}</span>
           </button>
 
-          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-1">
+          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto overflow-y-hidden px-1">
             {windows.length === 0 ? (
               <span className="rounded-xl px-3 py-2 text-xs text-slate-400">
                 {t("taskbar.noWindows")}
@@ -78,7 +78,7 @@ export function Taskbar() {
                     key={osWindow.instanceId}
                     type="button"
                     className={clsx(
-                      "flex h-11 min-w-0 max-w-48 items-center gap-2 rounded-2xl border px-3 text-sm transition",
+                      "flex h-11 min-w-11 max-w-48 shrink-0 items-center gap-2 rounded-2xl border px-3 text-sm transition",
                       isActive
                         ? "border-[rgba(var(--os-accent-rgb),0.45)] bg-[rgba(var(--os-accent-rgb),0.16)] text-white"
                         : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
@@ -96,20 +96,20 @@ export function Taskbar() {
 
           <button
             type="button"
-            className="flex h-11 items-center rounded-2xl border border-white/10 bg-white/5 px-3 text-sm transition hover:bg-white/10"
+            className="flex h-11 shrink-0 items-center rounded-2xl border border-white/10 bg-white/5 px-3 text-sm transition hover:bg-white/10"
             onClick={toggleLanguage}
             title={t("taskbar.language")}
           >
             {language === "tr" ? "TR" : "EN"}
           </button>
 
-          <div className="hidden rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-right text-xs text-slate-200 sm:block">
+          <div className="hidden shrink-0 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-right text-xs text-slate-200 sm:block">
             {formattedTime}
           </div>
 
           <button
             type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white"
             onClick={showDesktop}
             title={t("taskbar.showDesktop")}
             aria-label={t("taskbar.showDesktop")}
