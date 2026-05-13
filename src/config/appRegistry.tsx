@@ -1,4 +1,8 @@
 import {
+  Activity,
+  Briefcase,
+  Code2,
+  FileText,
   FolderKanban,
   HardDrive,
   Info,
@@ -9,9 +13,13 @@ import {
 
 import { AboutApp } from "@/apps/AboutApp";
 import { ContactApp } from "@/apps/ContactApp";
+import { CVApp } from "@/apps/CVApp";
+import { ExperienceApp } from "@/apps/ExperienceApp";
 import { FileExplorerApp } from "@/apps/FileExplorerApp";
 import { ProjectsApp } from "@/apps/ProjectsApp";
 import { SettingsApp } from "@/apps/SettingsApp";
+import { SkillsApp } from "@/apps/SkillsApp";
+import { SystemMonitorApp } from "@/apps/SystemMonitorApp";
 import { TerminalApp } from "@/apps/TerminalApp";
 import type { AppDefinition } from "@/types/window";
 
@@ -22,7 +30,7 @@ export const appRegistry: Record<string, AppDefinition> = {
     titleKey: "app.about.title",
     icon: Info,
     component: AboutApp,
-    defaultPosition: { x: 120, y: 70 },
+    defaultPosition: { x: 90, y: 60 },
     defaultSize: { width: 820, height: 620 },
     minSize: { width: 560, height: 420 },
     resizable: true,
@@ -37,9 +45,9 @@ export const appRegistry: Record<string, AppDefinition> = {
     titleKey: "app.projects.title",
     icon: FolderKanban,
     component: ProjectsApp,
-    defaultPosition: { x: 170, y: 90 },
-    defaultSize: { width: 980, height: 640 },
-    minSize: { width: 680, height: 460 },
+    defaultPosition: { x: 140, y: 70 },
+    defaultSize: { width: 1040, height: 660 },
+    minSize: { width: 700, height: 480 },
     resizable: true,
     singleInstance: true,
     showOnDesktop: true,
@@ -52,9 +60,9 @@ export const appRegistry: Record<string, AppDefinition> = {
     titleKey: "app.fileExplorer.title",
     icon: HardDrive,
     component: FileExplorerApp,
-    defaultPosition: { x: 130, y: 80 },
-    defaultSize: { width: 860, height: 560 },
-    minSize: { width: 560, height: 380 },
+    defaultPosition: { x: 150, y: 90 },
+    defaultSize: { width: 900, height: 590 },
+    minSize: { width: 580, height: 400 },
     resizable: true,
     singleInstance: true,
     showOnDesktop: true,
@@ -68,10 +76,55 @@ export const appRegistry: Record<string, AppDefinition> = {
     icon: Terminal,
     component: TerminalApp,
     defaultPosition: { x: 220, y: 130 },
-    defaultSize: { width: 700, height: 460 },
-    minSize: { width: 460, height: 320 },
+    defaultSize: { width: 740, height: 480 },
+    minSize: { width: 480, height: 340 },
     resizable: true,
     singleInstance: false,
+    showOnDesktop: true,
+    showInStartMenu: true,
+  },
+
+  cv: {
+    id: "cv",
+    title: "CV",
+    titleKey: "app.cv.title",
+    icon: FileText,
+    component: CVApp,
+    defaultPosition: { x: 190, y: 80 },
+    defaultSize: { width: 860, height: 640 },
+    minSize: { width: 580, height: 420 },
+    resizable: true,
+    singleInstance: true,
+    showOnDesktop: true,
+    showInStartMenu: true,
+  },
+
+  skills: {
+    id: "skills",
+    title: "Skills",
+    titleKey: "app.skills.title",
+    icon: Code2,
+    component: SkillsApp,
+    defaultPosition: { x: 230, y: 110 },
+    defaultSize: { width: 820, height: 580 },
+    minSize: { width: 540, height: 380 },
+    resizable: true,
+    singleInstance: true,
+    showOnDesktop: true,
+    showInStartMenu: true,
+  },
+
+  experience: {
+    id: "experience",
+    title: "Experience",
+    titleKey: "app.experience.title",
+    icon: Briefcase,
+    component: ExperienceApp,
+    defaultPosition: { x: 260, y: 100 },
+    defaultSize: { width: 860, height: 600 },
+    minSize: { width: 560, height: 400 },
+    resizable: true,
+    singleInstance: true,
     showOnDesktop: true,
     showInStartMenu: true,
   },
@@ -91,15 +144,30 @@ export const appRegistry: Record<string, AppDefinition> = {
     showInStartMenu: true,
   },
 
+  systemMonitor: {
+    id: "systemMonitor",
+    title: "System Monitor",
+    titleKey: "app.systemMonitor.title",
+    icon: Activity,
+    component: SystemMonitorApp,
+    defaultPosition: { x: 320, y: 120 },
+    defaultSize: { width: 760, height: 540 },
+    minSize: { width: 520, height: 360 },
+    resizable: true,
+    singleInstance: true,
+    showOnDesktop: true,
+    showInStartMenu: true,
+  },
+
   settings: {
     id: "settings",
     title: "Settings",
     titleKey: "app.settings.title",
     icon: Settings,
     component: SettingsApp,
-    defaultPosition: { x: 260, y: 110 },
-    defaultSize: { width: 760, height: 560 },
-    minSize: { width: 520, height: 380 },
+    defaultPosition: { x: 300, y: 100 },
+    defaultSize: { width: 820, height: 620 },
+    minSize: { width: 540, height: 400 },
     resizable: true,
     singleInstance: true,
     showOnDesktop: true,

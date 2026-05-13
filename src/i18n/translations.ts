@@ -8,7 +8,7 @@ export const languages: Record<Language, string> = {
 export const translations = {
   tr: {
     "system.name": "Portfolio OS",
-    "system.phase": "Faz 6",
+    "system.phase": "Faz 7",
     "system.desktop": "Masaüstü",
 
     "boot.title": "Portfolio OS",
@@ -27,6 +27,10 @@ export const translations = {
     "app.fileExplorer.title": "Bilgisayarım",
     "app.settings.title": "Ayarlar",
     "app.contact.title": "İletişim",
+    "app.cv.title": "CV",
+    "app.skills.title": "Skills",
+    "app.experience.title": "Experience",
+    "app.systemMonitor.title": "System Monitor",
 
     "desktop.open": "Aç",
     "desktop.newFolder": "Yeni klasör",
@@ -34,6 +38,7 @@ export const translations = {
     "desktop.refresh": "Yenile",
     "desktop.folder": "Yeni Klasör",
     "desktop.folderHint": "Bu demo klasörü masaüstü üzerinde durur.",
+    "desktop.openTerminalHere": "Terminali burada aç",
 
     "taskbar.start": "Başlat",
     "taskbar.showDesktop": "Masaüstünü göster",
@@ -49,6 +54,17 @@ export const translations = {
     "window.maximize": "Ekranı kapla",
     "window.restore": "Geri yükle",
     "window.close": "Kapat",
+
+    "command.search": "Komut veya uygulama ara...",
+    "command.open": "Aç",
+    "command.actions": "Hızlı işlemler",
+    "command.noResults": "Sonuç yok",
+    "command.hint": "Ctrl + K ile açılır",
+
+    "notify.welcome": "Portfolio OS hazır.",
+    "notify.settingsSaved": "Ayar kaydedildi.",
+    "notify.copied": "Kopyalandı.",
+    "notify.appOpened": "Uygulama açıldı.",
 
     "about.quickIntro": "Kısa tanıtım",
     "about.profile": "Profil",
@@ -66,9 +82,9 @@ export const translations = {
 
     "terminal.heading": "Portfolio OS Terminal",
     "terminal.prompt": "guest@portfolio-os",
-    "terminal.placeholder": "Komut yaz. Örnek: help, ls, cd projects, whoami, clear, theme --dark",
+    "terminal.placeholder": "Komut yaz. Örnek: help, neofetch, projects, open catudy, contact",
     "terminal.inputLabel": "Terminal komutu",
-    "terminal.help": "Kullanılabilir komutlar: help, ls, cd, pwd, whoami, clear, theme --dark, theme --light, theme --violet",
+    "terminal.help": "Komutlar: help, ls, cd, pwd, whoami, clear, neofetch, projects, skills, contact, cv, about, socials, open catudy, open projects, open contact, theme --dark, theme --light, theme --violet",
     "terminal.unknown": "Bilinmeyen komut",
     "terminal.notFound": "Yol bulunamadı",
     "terminal.notFolder": "Bu bir klasör değil",
@@ -80,6 +96,9 @@ export const translations = {
     "settings.heading": "Sistem Ayarları",
     "settings.description": "Portfolio OS görünümünü ve dilini değiştir.",
     "settings.wallpaper": "Duvar kağıdı",
+    "settings.customWallpaper": "Custom wallpaper",
+    "settings.uploadWallpaper": "Görsel yükle",
+    "settings.clearCustomWallpaper": "Custom wallpaper'ı kaldır",
     "settings.accent": "Accent color",
     "settings.theme": "Tema",
     "settings.language": "Dil",
@@ -89,11 +108,15 @@ export const translations = {
     "settings.apply": "Uygula",
     "settings.saved": "Bu ayarlar tarayıcıda kaydedilir.",
 
+    "projects.search": "Proje ara...",
+    "projects.allTech": "Tüm teknolojiler",
     "projects.stack": "Teknoloji",
     "projects.status": "Durum",
     "projects.preview": "Önizleme",
     "projects.details": "Detaylar",
     "projects.openPreview": "Live preview aç",
+    "projects.fullscreenPreview": "Preview'i tam ekran aç",
+    "projects.closePreview": "Preview'i kapat",
     "projects.noPreview": "Bu proje için iframe önizlemesi yok.",
     "projects.select": "Detayları görmek için proje seç.",
     "projects.featured": "Projeler",
@@ -101,6 +124,29 @@ export const translations = {
     "projects.live": "Live site",
     "projects.source": "Kaynak",
     "projects.note": "Bazı external siteler iframe içinde açılmayabilir. Link butonları yine çalışır.",
+    "projects.whatBuilt": "What I built",
+    "projects.whatLearned": "What I learned",
+
+    "cv.heading": "CV",
+    "cv.description": "Kısa, okunabilir ve işe alım odaklı profil özeti.",
+    "cv.download": "CV indir",
+    "cv.openPortfolio": "Mevcut portfolyoyu aç",
+
+    "skills.heading": "Skills",
+    "skills.description": "Teknik ve yaratıcı tarafı birlikte gösteren yetenek haritası.",
+
+    "experience.heading": "Experience",
+    "experience.description": "Eğitim ve iş geçmişi timeline görünümü.",
+
+    "monitor.heading": "System Monitor",
+    "monitor.uptime": "Uptime",
+    "monitor.windows": "Açık pencereler",
+    "monitor.active": "Aktif pencere",
+    "monitor.theme": "Tema",
+    "monitor.language": "Dil",
+    "monitor.accent": "Accent",
+    "monitor.memory": "Memory",
+    "monitor.cpu": "CPU",
 
     "contact.heading": "İletişim",
     "contact.description": "Staj, proje veya iyi bir fikir için ulaşabilirsin.",
@@ -110,6 +156,7 @@ export const translations = {
     "contact.cv": "CV indir",
     "contact.location": "Konum",
     "contact.message": "Teknik olarak gelişebileceğim ve aynı zamanda UI, interaction ve product feel tarafını kullanabileceğim fırsatlarla ilgileniyorum.",
+    "contact.copyEmail": "E-postayı kopyala",
 
     "explorer.back": "Geri",
     "explorer.forward": "İleri",
@@ -128,13 +175,15 @@ export const translations = {
     "explorer.noSelection": "Bir öğe seç.",
     "explorer.openFolderHint": "Klasörü açmak için çift tıkla.",
     "explorer.filePreview": "Dosya önizlemesi",
+    "explorer.openPreview": "Önizleme aç",
+    "explorer.closePreview": "Önizlemeyi kapat",
     "explorer.previewUnavailable": "Bu demo dosyası gerçek dosya içeriği taşımaz.",
     "explorer.currentFolder": "Mevcut klasör"
   },
 
   en: {
     "system.name": "Portfolio OS",
-    "system.phase": "Phase 6",
+    "system.phase": "Phase 7",
     "system.desktop": "Desktop",
 
     "boot.title": "Portfolio OS",
@@ -153,6 +202,10 @@ export const translations = {
     "app.fileExplorer.title": "My Computer",
     "app.settings.title": "Settings",
     "app.contact.title": "Contact",
+    "app.cv.title": "CV",
+    "app.skills.title": "Skills",
+    "app.experience.title": "Experience",
+    "app.systemMonitor.title": "System Monitor",
 
     "desktop.open": "Open",
     "desktop.newFolder": "New folder",
@@ -160,6 +213,7 @@ export const translations = {
     "desktop.refresh": "Refresh",
     "desktop.folder": "New Folder",
     "desktop.folderHint": "This demo folder stays on the desktop.",
+    "desktop.openTerminalHere": "Open Terminal Here",
 
     "taskbar.start": "Start",
     "taskbar.showDesktop": "Show desktop",
@@ -175,6 +229,17 @@ export const translations = {
     "window.maximize": "Maximize",
     "window.restore": "Restore",
     "window.close": "Close",
+
+    "command.search": "Search command or app...",
+    "command.open": "Open",
+    "command.actions": "Quick actions",
+    "command.noResults": "No results",
+    "command.hint": "Opens with Ctrl + K",
+
+    "notify.welcome": "Portfolio OS is ready.",
+    "notify.settingsSaved": "Settings saved.",
+    "notify.copied": "Copied.",
+    "notify.appOpened": "App opened.",
 
     "about.quickIntro": "A quick introduction",
     "about.profile": "Profile",
@@ -192,9 +257,9 @@ export const translations = {
 
     "terminal.heading": "Portfolio OS Terminal",
     "terminal.prompt": "guest@portfolio-os",
-    "terminal.placeholder": "Type a command. Example: help, ls, cd projects, whoami, clear, theme --dark",
+    "terminal.placeholder": "Type a command. Example: help, neofetch, projects, open catudy, contact",
     "terminal.inputLabel": "Terminal command",
-    "terminal.help": "Available commands: help, ls, cd, pwd, whoami, clear, theme --dark, theme --light, theme --violet",
+    "terminal.help": "Commands: help, ls, cd, pwd, whoami, clear, neofetch, projects, skills, contact, cv, about, socials, open catudy, open projects, open contact, theme --dark, theme --light, theme --violet",
     "terminal.unknown": "Unknown command",
     "terminal.notFound": "Path not found",
     "terminal.notFolder": "This is not a folder",
@@ -206,6 +271,9 @@ export const translations = {
     "settings.heading": "System Settings",
     "settings.description": "Change Portfolio OS appearance and language.",
     "settings.wallpaper": "Wallpaper",
+    "settings.customWallpaper": "Custom wallpaper",
+    "settings.uploadWallpaper": "Upload image",
+    "settings.clearCustomWallpaper": "Remove custom wallpaper",
     "settings.accent": "Accent color",
     "settings.theme": "Theme",
     "settings.language": "Language",
@@ -215,11 +283,15 @@ export const translations = {
     "settings.apply": "Apply",
     "settings.saved": "These settings are saved in your browser.",
 
+    "projects.search": "Search projects...",
+    "projects.allTech": "All technologies",
     "projects.stack": "Stack",
     "projects.status": "Status",
     "projects.preview": "Preview",
     "projects.details": "Details",
     "projects.openPreview": "Open live preview",
+    "projects.fullscreenPreview": "Open preview fullscreen",
+    "projects.closePreview": "Close preview",
     "projects.noPreview": "No iframe preview for this project.",
     "projects.select": "Select a project to see details.",
     "projects.featured": "Projects",
@@ -227,6 +299,29 @@ export const translations = {
     "projects.live": "Live site",
     "projects.source": "Source",
     "projects.note": "Some external sites may not open inside an iframe. Link buttons still work.",
+    "projects.whatBuilt": "What I built",
+    "projects.whatLearned": "What I learned",
+
+    "cv.heading": "CV",
+    "cv.description": "A short, readable, hiring-focused profile summary.",
+    "cv.download": "Download CV",
+    "cv.openPortfolio": "Open current portfolio",
+
+    "skills.heading": "Skills",
+    "skills.description": "A skills map showing both technical and creative sides.",
+
+    "experience.heading": "Experience",
+    "experience.description": "Education and work history in a timeline view.",
+
+    "monitor.heading": "System Monitor",
+    "monitor.uptime": "Uptime",
+    "monitor.windows": "Open windows",
+    "monitor.active": "Active window",
+    "monitor.theme": "Theme",
+    "monitor.language": "Language",
+    "monitor.accent": "Accent",
+    "monitor.memory": "Memory",
+    "monitor.cpu": "CPU",
 
     "contact.heading": "Contact",
     "contact.description": "If you have a project, internship, or a good idea, let’s talk.",
@@ -236,6 +331,7 @@ export const translations = {
     "contact.cv": "Download CV",
     "contact.location": "Location",
     "contact.message": "I’m interested in opportunities where I can keep improving technically while also using my eye for UI, interaction, and product feel.",
+    "contact.copyEmail": "Copy email",
 
     "explorer.back": "Back",
     "explorer.forward": "Forward",
@@ -254,6 +350,8 @@ export const translations = {
     "explorer.noSelection": "Select an item.",
     "explorer.openFolderHint": "Double-click to open the folder.",
     "explorer.filePreview": "File preview",
+    "explorer.openPreview": "Open preview",
+    "explorer.closePreview": "Close preview",
     "explorer.previewUnavailable": "This demo file does not contain real file content.",
     "explorer.currentFolder": "Current folder"
   }

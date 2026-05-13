@@ -2,9 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { profile } from "@/data/profile";
+import { portfolioProjects } from "@/data/projects";
 import { useI18n } from "@/context/LanguageContext";
 import { useOSSettings } from "@/context/OSSettingsContext";
+import { useWindowManager } from "@/context/WindowManagerContext";
 import { getNodeByPath, resolvePath } from "@/lib/vfs";
+import type { AppComponentProps } from "@/types/window";
 
 type TerminalLine = {
   id: string;
@@ -20,15 +24,21 @@ function createLine(kind: TerminalLine["kind"], text: string): TerminalLine {
   };
 }
 
-export function TerminalApp() {
-  const { t } = useI18n();
+export function TerminalApp({ launchData }: AppComponentProps) {
+  const { language, t } = useI18n();
   const { setThemeMode, setWallpaperId, setAccentColorId } = useOSSettings();
+  const { openApp } = useWindowManager();
 
-  const [currentPath, setCurrentPath] = useState("/home/user");
+  const initialPath =
+    typeof launchData?.initialPath === "string"
+      ? launchData.initialPath
+      : "/home/yusuf-arca-cicek";
+
+  const [currentPath, setCurrentPath] = useState(initialPath);
   const [input, setInput] = useState("");
   const [lines, setLines] = useState<TerminalLine[]>([
-    createLine("output", "Portfolio OS Terminal v0.4"),
-    createLine("output", "Type `help` to see available commands."),
+    createLine("output", "Portfolio OS Terminal v0.7"),
+    createLine("output", "Type `help` or `neofetch` to start."),
   ]);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -56,6 +66,7 @@ export function TerminalApp() {
 
     const [commandName, ...args] = command.split(/\s+/);
     const normalizedCommand = commandName.toLowerCase();
+    const joinedArgs = args.join(" ").toLowerCase();
 
     if (normalizedCommand === "clear") {
       setLines([]);
@@ -69,6 +80,118 @@ export function TerminalApp() {
 
     if (normalizedCommand === "whoami") {
       pushLines(promptLine, createLine("output", t("terminal.whoami")));
+      return;
+    }
+
+    if (normalizedCommand === "neofetch") {
+      pushLines(
+        promptLine,
+        createLine(
+          "output",
+          [
+            "guest@portfolio-os",
+            "------------------",
+            `Name: ${profile.name}`,
+            `Role: ${profile.role[language]}`,
+            `Base: ${profile.base}`,
+            `Focus: ${profile.focus[language]}`,
+            `Status: ${profile.status[language]}`,
+            `Stack: ${profile.coreTools.join(", ")}`,
+          ].join("\n")
+        )
+      );
+      return;
+    }
+
+    if (normalizedCommand === "projects") {
+      pushLines(
+        promptLine,
+        createLine(
+          "output",
+          portfolioProjects.map((project) => `- ${project.title}`).join("\n")
+        )
+      );
+      openApp("projects");
+      return;
+    }
+
+    if (normalizedCommand === "skills") {
+      pushLines(promptLine, createLine("output", profile.coreTools.join("  ")));
+      openApp("skills");
+      return;
+    }
+
+    if (normalizedCommand === "contact") {
+      pushLines(
+        promptLine,
+        createLine(
+          "output",
+          [
+            `Email: ${profile.contactEmail}`,
+            `GitHub: ${profile.githubUrl}`,
+            `LinkedIn: ${profile.linkedInUrl}`,
+          ].join("\n")
+        )
+      );
+      openApp("contact");
+      return;
+    }
+
+    if (normalizedCommand === "cv") {
+      pushLines(promptLine, createLine("output", profile.cvUrl));
+      openApp("cv");
+      return;
+    }
+
+    if (normalizedCommand === "about") {
+      pushLines(promptLine, createLine("output", profile.summary[language]));
+      openApp("about");
+      return;
+    }
+
+    if (normalizedCommand === "socials") {
+      pushLines(
+        promptLine,
+        createLine(
+          "output",
+          [`GitHub: ${profile.githubUrl}`, `LinkedIn: ${profile.linkedInUrl}`].join("\n")
+        )
+      );
+      return;
+    }
+
+    if (normalizedCommand === "open") {
+      if (joinedArgs.includes("catudy")) {
+        openApp("projects", { projectId: "catudy-app" });
+        pushLines(promptLine, createLine("output", "Opening Catudy..."));
+        return;
+      }
+
+      if (joinedArgs.includes("project")) {
+        openApp("projects");
+        pushLines(promptLine, createLine("output", "Opening Projects..."));
+        return;
+      }
+
+      if (joinedArgs.includes("contact")) {
+        openApp("contact");
+        pushLines(promptLine, createLine("output", "Opening Contact..."));
+        return;
+      }
+
+      if (joinedArgs.includes("cv")) {
+        openApp("cv");
+        pushLines(promptLine, createLine("output", "Opening CV..."));
+        return;
+      }
+
+      if (joinedArgs.includes("skills")) {
+        openApp("skills");
+        pushLines(promptLine, createLine("output", "Opening Skills..."));
+        return;
+      }
+
+      pushLines(promptLine, createLine("error", "open catudy | open projects | open contact | open cv | open skills"));
       return;
     }
 
@@ -226,7 +349,7 @@ export function TerminalApp() {
           value={input}
           onChange={(event) => setInput(event.target.value)}
           className="min-w-0 flex-1 bg-transparent text-emerald-100 outline-none placeholder:text-slate-600"
-          placeholder="help"
+          placeholder="neofetch"
           autoComplete="off"
           spellCheck={false}
         />

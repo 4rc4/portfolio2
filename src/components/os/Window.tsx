@@ -1,14 +1,18 @@
 "use client";
 
-import { motion, useDragControls, type PanInfo } from "framer-motion";
+import { motion } from "framer-motion";
 import { Maximize2, Minus, Square, X } from "lucide-react";
-import { useCallback, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import clsx from "clsx";
 
 import { appRegistry } from "@/config/appRegistry";
 import { useI18n } from "@/context/LanguageContext";
 import { useWindowManager } from "@/context/WindowManagerContext";
-import type { OSWindow, WindowSize } from "@/types/window";
+import type { OSWindow, WindowPosition, WindowSize } from "@/types/window";
 
 type WindowProps = {
   osWindow: OSWindow;
@@ -27,7 +31,13 @@ export function Window({ osWindow }: WindowProps) {
     updateWindowSize,
   } = useWindowManager();
 
-  const dragControls = useDragControls();
+  const dragStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startPosition: WindowPosition;
+  } | null>(null);
+
   const resizeStateRef = useRef<{
     startX: number;
     startY: number;
@@ -43,33 +53,77 @@ export function Window({ osWindow }: WindowProps) {
   const Icon = app.icon;
   const title = app.titleKey ? t(app.titleKey) : osWindow.title;
 
-  const handleDragEnd = useCallback(
-    (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      const dragState = dragStateRef.current;
+
+      if (!dragState) {
+        return;
+      }
+
+      const nextX = dragState.startPosition.x + (event.clientX - dragState.startX);
+      const nextY = dragState.startPosition.y + (event.clientY - dragState.startY);
+
       updateWindowPosition(osWindow.instanceId, {
-        x: osWindow.position.x + info.offset.x,
-        y: osWindow.position.y + info.offset.y,
+        x: Math.max(0, Math.min(nextX, window.innerWidth - 120)),
+        y: Math.max(0, Math.min(nextY, window.innerHeight - 92)),
       });
-    },
-    [
-      updateWindowPosition,
-      osWindow.instanceId,
-      osWindow.position.x,
-      osWindow.position.y,
-    ]
-  );
+    };
+
+    const handlePointerUp = () => {
+      dragStateRef.current = null;
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+
+    if (dragStateRef.current) {
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp);
+    }
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [osWindow.instanceId, updateWindowPosition]);
 
   const getMaximizedBounds = () => {
+    const taskbarHeight = 64;
+    const padding = 10;
+
     return {
-      position: { x: 16, y: 16 },
+      position: { x: padding, y: padding },
       size: {
-        width: Math.max(globalThis.innerWidth - 32, osWindow.minSize.width),
-        height: Math.max(globalThis.innerHeight - 96, osWindow.minSize.height),
+        width: Math.max(window.innerWidth - padding * 2, osWindow.minSize.width),
+        height: Math.max(
+          window.innerHeight - taskbarHeight - padding * 2,
+          osWindow.minSize.height
+        ),
       },
     };
   };
 
   const handleToggleMaximize = () => {
     toggleMaximizeWindow(osWindow.instanceId, getMaximizedBounds());
+  };
+
+  const handleTitlePointerDown = (
+    event: ReactPointerEvent<HTMLDivElement>
+  ) => {
+    focusWindow(osWindow.instanceId);
+
+    if (osWindow.maximized || event.button !== 0) {
+      return;
+    }
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startPosition: osWindow.position,
+    };
   };
 
   const handleResizePointerDown = (
@@ -104,19 +158,19 @@ export function Window({ osWindow }: WindowProps) {
         resizeState.startSize.height + (moveEvent.clientY - resizeState.startY);
 
       updateWindowSize(osWindow.instanceId, {
-        width: nextWidth,
-        height: nextHeight,
+        width: Math.min(nextWidth, window.innerWidth - osWindow.position.x - 12),
+        height: Math.min(nextHeight, window.innerHeight - osWindow.position.y - 76),
       });
     };
 
     const handlePointerUp = () => {
       resizeStateRef.current = null;
-      globalThis.removeEventListener("pointermove", handlePointerMove);
-      globalThis.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
     };
 
-    globalThis.addEventListener("pointermove", handlePointerMove);
-    globalThis.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
   };
 
   if (osWindow.minimized) {
@@ -126,16 +180,16 @@ export function Window({ osWindow }: WindowProps) {
   return (
     <motion.div
       className={clsx(
-        "absolute left-0 top-0 flex overflow-hidden rounded-2xl border shadow-2xl",
+        "absolute flex overflow-hidden rounded-2xl border shadow-2xl",
         "bg-slate-950/50 text-white backdrop-blur-md",
-        "max-sm:!left-0 max-sm:!top-0 max-sm:!h-[calc(100vh-64px)] max-sm:!w-screen max-sm:!translate-x-0 max-sm:!translate-y-0 max-sm:rounded-none",
+        "max-sm:!left-0 max-sm:!top-0 max-sm:!h-[calc(100vh-64px)] max-sm:!w-screen max-sm:rounded-none",
         isActive
           ? "border-[rgba(var(--os-accent-rgb),0.45)] shadow-[0_30px_100px_rgba(var(--os-accent-rgb),0.16)]"
           : "border-white/10 shadow-black/30"
       )}
       style={{
-        x: osWindow.position.x,
-        y: osWindow.position.y,
+        left: osWindow.position.x,
+        top: osWindow.position.y,
         width: osWindow.size.width,
         height: osWindow.size.height,
         zIndex: osWindow.zIndex,
@@ -147,12 +201,6 @@ export function Window({ osWindow }: WindowProps) {
       }}
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ duration: 0.16 }}
-      drag={!osWindow.maximized}
-      dragControls={dragControls}
-      dragListener={false}
-      dragMomentum={false}
-      onDragStart={() => focusWindow(osWindow.instanceId)}
-      onDragEnd={handleDragEnd}
       onPointerDown={() => focusWindow(osWindow.instanceId)}
     >
       <div className="flex h-full w-full flex-col">
@@ -162,13 +210,7 @@ export function Window({ osWindow }: WindowProps) {
             "border-white/10 bg-white/10",
             osWindow.maximized ? "cursor-default" : "cursor-move"
           )}
-          onPointerDown={(event) => {
-            focusWindow(osWindow.instanceId);
-
-            if (!osWindow.maximized) {
-              dragControls.start(event);
-            }
-          }}
+          onPointerDown={handleTitlePointerDown}
           onDoubleClick={handleToggleMaximize}
         >
           <div className="flex min-w-0 items-center gap-2">
@@ -222,7 +264,10 @@ export function Window({ osWindow }: WindowProps) {
         </div>
 
         <div className="relative min-h-0 flex-1 overflow-auto p-4">
-          <AppComponent windowId={osWindow.instanceId} />
+          <AppComponent
+            windowId={osWindow.instanceId}
+            launchData={osWindow.launchData}
+          />
         </div>
       </div>
 

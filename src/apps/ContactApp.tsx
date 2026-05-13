@@ -4,9 +4,27 @@ import { Download, Github, Linkedin, Mail, MapPin } from "lucide-react";
 
 import { profile } from "@/data/profile";
 import { useI18n } from "@/context/LanguageContext";
+import { useNotifications } from "@/context/NotificationContext";
 
 export function ContactApp() {
   const { t } = useI18n();
+  const { notify } = useNotifications();
+
+  const copyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(profile.contactEmail);
+      notify({
+        title: t("notify.copied"),
+        message: profile.contactEmail,
+        tone: "success",
+      });
+    } catch {
+      notify({
+        title: "Clipboard unavailable",
+        tone: "warning",
+      });
+    }
+  };
 
   const contactItems = [
     {
@@ -56,6 +74,14 @@ export function ContactApp() {
             {t("contact.location")}: {profile.base}
           </span>
         </div>
+
+        <button
+          type="button"
+          className="mt-4 rounded-2xl border border-[rgba(var(--os-accent-rgb),0.45)] bg-[rgba(var(--os-accent-rgb),0.14)] px-4 py-2 text-white transition hover:bg-[rgba(var(--os-accent-rgb),0.24)]"
+          onClick={copyEmail}
+        >
+          {t("contact.copyEmail")}
+        </button>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2">

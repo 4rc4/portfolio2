@@ -1,35 +1,105 @@
 "use client";
 
-import { ExternalLink, Github, MonitorPlay } from "lucide-react";
+import { ExternalLink, Github, Maximize2, MonitorPlay, Search, X } from "lucide-react";
 import clsx from "clsx";
-import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 
 import { portfolioProjects } from "@/data/projects";
 import { useI18n } from "@/context/LanguageContext";
+import type { AppComponentProps } from "@/types/window";
 
-export function ProjectsApp() {
+export function ProjectsApp({ launchData }: AppComponentProps) {
   const { language, t } = useI18n();
-  const [selectedProjectId, setSelectedProjectId] = useState(
-    portfolioProjects[0].id
-  );
+
+  const initialProjectId =
+    typeof launchData?.projectId === "string"
+      ? launchData.projectId
+      : portfolioProjects[0].id;
+
+  const [selectedProjectId, setSelectedProjectId] = useState(initialProjectId);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [techFilter, setTechFilter] = useState("all");
+
+  useEffect(() => {
+    if (typeof launchData?.projectId === "string") {
+      setSelectedProjectId(launchData.projectId);
+      setPreviewOpen(false);
+      setFullscreenPreviewOpen(false);
+    }
+  }, [launchData]);
+
+  const allTech = useMemo(() => {
+    const values = new Set<string>();
+
+    portfolioProjects.forEach((project) => {
+      project.stack.forEach((item) => values.add(item));
+    });
+
+    return Array.from(values).sort();
+  }, []);
+
+  const filteredProjects = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    return portfolioProjects.filter((project) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        project.title.toLowerCase().includes(normalizedSearch) ||
+        project.description[language].toLowerCase().includes(normalizedSearch) ||
+        project.stack.some((item) => item.toLowerCase().includes(normalizedSearch));
+
+      const matchesTech =
+        techFilter === "all" || project.stack.includes(techFilter);
+
+      return matchesSearch && matchesTech;
+    });
+  }, [language, searchQuery, techFilter]);
 
   const selectedProject = useMemo(() => {
     return (
       portfolioProjects.find((project) => project.id === selectedProjectId) ??
+      filteredProjects[0] ??
       portfolioProjects[0]
     );
-  }, [selectedProjectId]);
+  }, [filteredProjects, selectedProjectId]);
 
   return (
-    <div className="grid h-full min-h-0 gap-4 md:grid-cols-[280px_1fr]">
+    <div className="grid h-full min-h-0 gap-4 md:grid-cols-[300px_1fr]">
       <aside className="min-h-0 overflow-auto rounded-2xl border border-white/10 bg-white/5 p-3">
         <p className="mb-3 px-2 text-xs font-medium uppercase tracking-wide text-slate-400">
           {t("projects.featured")}
         </p>
 
+        <div className="mb-3 space-y-2">
+          <label className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-400">
+            <Search size={15} />
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={t("projects.search")}
+              className="min-w-0 flex-1 bg-transparent text-slate-200 outline-none placeholder:text-slate-500"
+            />
+          </label>
+
+          <select
+            value={techFilter}
+            onChange={(event) => setTechFilter(event.target.value)}
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2 text-xs text-slate-200 outline-none"
+          >
+            <option value="all">{t("projects.allTech")}</option>
+            {allTech.map((tech) => (
+              <option key={tech} value={tech}>
+                {tech}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="space-y-2">
-          {portfolioProjects.map((project) => {
+          {filteredProjects.map((project) => {
             const isSelected = selectedProject.id === project.id;
 
             return (
@@ -45,6 +115,7 @@ export function ProjectsApp() {
                 onClick={() => {
                   setSelectedProjectId(project.id);
                   setPreviewOpen(false);
+                  setFullscreenPreviewOpen(false);
                 }}
               >
                 <p className="text-[11px] uppercase tracking-wide text-slate-500">
@@ -57,6 +128,12 @@ export function ProjectsApp() {
               </button>
             );
           })}
+
+          {filteredProjects.length === 0 && (
+            <p className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-500">
+              {t("command.noResults")}
+            </p>
+          )}
         </div>
       </aside>
 
@@ -76,14 +153,28 @@ export function ProjectsApp() {
             </div>
 
             {selectedProject.previewUrl && (
-              <button
-                type="button"
-                className="flex items-center gap-2 rounded-2xl border border-[rgba(var(--os-accent-rgb),0.45)] bg-[rgba(var(--os-accent-rgb),0.12)] px-4 py-2 text-sm text-white transition hover:bg-[rgba(var(--os-accent-rgb),0.22)]"
-                onClick={() => setPreviewOpen((current) => !current)}
-              >
-                <MonitorPlay size={17} />
-                <span>{t("projects.openPreview")}</span>
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-2xl border border-[rgba(var(--os-accent-rgb),0.45)] bg-[rgba(var(--os-accent-rgb),0.12)] px-4 py-2 text-sm text-white transition hover:bg-[rgba(var(--os-accent-rgb),0.22)]"
+                  onClick={() => setPreviewOpen((current) => !current)}
+                >
+                  <MonitorPlay size={17} />
+                  <span>{t("projects.openPreview")}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white transition hover:bg-white/10"
+                  onClick={() => {
+                    setPreviewOpen(true);
+                    setFullscreenPreviewOpen(true);
+                  }}
+                >
+                  <Maximize2 size={17} />
+                  <span>{t("projects.fullscreenPreview")}</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -149,16 +240,30 @@ export function ProjectsApp() {
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-400">
-              {t("projects.details")}
-            </p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                {t("projects.whatBuilt")}
+              </p>
 
-            <ul className="mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed text-slate-300">
-              {selectedProject.bullets.map((bullet) => (
-                <li key={bullet.en}>{bullet[language]}</li>
-              ))}
-            </ul>
+              <ul className="mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed text-slate-300">
+                {selectedProject.whatBuilt.map((bullet) => (
+                  <li key={bullet.en}>{bullet[language]}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                {t("projects.whatLearned")}
+              </p>
+
+              <ul className="mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed text-slate-300">
+                {selectedProject.whatLearned.map((bullet) => (
+                  <li key={bullet.en}>{bullet[language]}</li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
@@ -190,6 +295,44 @@ export function ProjectsApp() {
           <p className="mt-3 text-xs text-slate-500">{t("projects.note")}</p>
         </div>
       </section>
+
+      <AnimatePresence>
+        {fullscreenPreviewOpen && selectedProject.previewUrl && (
+          <motion.div
+            className="fixed inset-0 z-[19000] bg-slate-950/95 p-3 text-white backdrop-blur-xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950">
+              <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{selectedProject.title}</p>
+                  <p className="truncate text-xs text-slate-500">
+                    {selectedProject.previewUrl}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-slate-300 transition hover:bg-white/15 hover:text-white"
+                  onClick={() => setFullscreenPreviewOpen(false)}
+                  aria-label={t("projects.closePreview")}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <iframe
+                title={`${selectedProject.title} fullscreen preview`}
+                src={selectedProject.previewUrl}
+                className="min-h-0 flex-1 bg-white"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

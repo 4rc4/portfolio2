@@ -8,11 +8,16 @@ import {
   Folder,
   HardDrive,
   Home,
+  Maximize2,
+  Terminal,
+  X,
 } from "lucide-react";
 import clsx from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 
 import { useI18n } from "@/context/LanguageContext";
+import { useWindowManager } from "@/context/WindowManagerContext";
 import type { VFSNode } from "@/data/vfs";
 import {
   getBreadcrumbs,
@@ -22,13 +27,41 @@ import {
   normalizePath,
 } from "@/lib/vfs";
 
+function getPreviewText(node: VFSNode) {
+  if (node.name.endsWith(".json")) {
+    return JSON.stringify(
+      {
+        name: node.name,
+        type: node.type,
+        size: node.size,
+        modified: node.modified,
+        description: node.description,
+      },
+      null,
+      2
+    );
+  }
+
+  if (node.name.endsWith(".url")) {
+    return node.description ?? "No link data.";
+  }
+
+  if (node.name.endsWith(".md") || node.name.endsWith(".txt")) {
+    return node.description ?? "No markdown preview.";
+  }
+
+  return node.description ?? "No preview available.";
+}
+
 export function FileExplorerApp() {
   const { t } = useI18n();
+  const { openApp } = useWindowManager();
 
   const [currentPath, setCurrentPath] = useState("/");
   const [backStack, setBackStack] = useState<string[]>([]);
   const [forwardStack, setForwardStack] = useState<string[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [previewNode, setPreviewNode] = useState<VFSNode | null>(null);
 
   const currentNode = getNodeByPath(currentPath);
   const children = currentNode?.children ?? [];
@@ -86,7 +119,7 @@ export function FileExplorerApp() {
     if (node.type === "folder") {
       navigateTo(joinPath(currentPath, node.name));
     } else {
-      setSelectedNodeId(node.id);
+      setPreviewNode(node);
     }
   };
 
@@ -133,6 +166,16 @@ export function FileExplorerApp() {
           <span className="hidden sm:inline">{t("explorer.home")}</span>
         </button>
 
+        <button
+          type="button"
+          className="flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 text-slate-300 transition hover:bg-white/10"
+          onClick={() => openApp("terminal", { initialPath: currentPath })}
+          title={t("desktop.openTerminalHere")}
+        >
+          <Terminal size={16} />
+          <span className="hidden lg:inline">{t("desktop.openTerminalHere")}</span>
+        </button>
+
         <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-xl border border-white/10 bg-black/20 px-3 py-2 font-mono text-xs text-slate-300">
           <span className="text-slate-500">{t("explorer.path")}:</span>
 
@@ -151,7 +194,7 @@ export function FileExplorerApp() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[1fr_240px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[1fr_260px]">
         <div className="min-h-0 overflow-auto p-3">
           <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
             <HardDrive size={15} />
@@ -180,7 +223,7 @@ export function FileExplorerApp() {
                     className={clsx(
                       "group flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition",
                       isSelected
-                        ? "border-cyan-300/40 bg-cyan-300/15"
+                        ? "border-[rgba(var(--os-accent-rgb),0.45)] bg-[rgba(var(--os-accent-rgb),0.14)]"
                         : "border-white/10 bg-white/5 hover:bg-white/10"
                     )}
                     onClick={() => setSelectedNodeId(node.id)}
@@ -266,13 +309,22 @@ export function FileExplorerApp() {
                 {selectedNode.description ?? t("explorer.previewUnavailable")}
               </div>
 
-              {selectedNode.type === "folder" && (
+              {selectedNode.type === "folder" ? (
                 <button
                   type="button"
-                  className="w-full rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-sm text-cyan-50 transition hover:bg-cyan-300/20"
+                  className="w-full rounded-2xl border border-[rgba(var(--os-accent-rgb),0.3)] bg-[rgba(var(--os-accent-rgb),0.1)] px-3 py-2 text-sm text-white transition hover:bg-[rgba(var(--os-accent-rgb),0.2)]"
                   onClick={() => openNode(selectedNode)}
                 >
                   {t("desktop.open")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[rgba(var(--os-accent-rgb),0.3)] bg-[rgba(var(--os-accent-rgb),0.1)] px-3 py-2 text-sm text-white transition hover:bg-[rgba(var(--os-accent-rgb),0.2)]"
+                  onClick={() => setPreviewNode(selectedNode)}
+                >
+                  <Maximize2 size={15} />
+                  {t("explorer.openPreview")}
                 </button>
               )}
             </div>
@@ -283,6 +335,39 @@ export function FileExplorerApp() {
           )}
         </aside>
       </div>
+
+      <AnimatePresence>
+        {previewNode && (
+          <motion.div
+            className="absolute inset-4 z-20 flex overflow-hidden rounded-2xl border border-white/10 bg-slate-950/92 shadow-2xl backdrop-blur-xl"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+          >
+            <div className="flex min-h-0 w-full flex-col">
+              <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+                <div>
+                  <p className="font-semibold text-white">{previewNode.name}</p>
+                  <p className="text-xs text-slate-500">{previewNode.modified}</p>
+                </div>
+
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-slate-300 transition hover:bg-white/15 hover:text-white"
+                  onClick={() => setPreviewNode(null)}
+                  aria-label={t("explorer.closePreview")}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap p-4 font-mono text-sm leading-relaxed text-slate-200">
+                {getPreviewText(previewNode)}
+              </pre>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

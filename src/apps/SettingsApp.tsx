@@ -5,19 +5,47 @@ import clsx from "clsx";
 import { accentColors } from "@/config/accentColors";
 import { wallpapers } from "@/config/wallpapers";
 import { useI18n } from "@/context/LanguageContext";
+import { useNotifications } from "@/context/NotificationContext";
 import { useOSSettings } from "@/context/OSSettingsContext";
 
 export function SettingsApp() {
   const { language, setLanguage, t } = useI18n();
+  const { notify } = useNotifications();
 
   const {
     wallpaperId,
     setWallpaperId,
+    customWallpaperDataUrl,
+    setCustomWallpaperDataUrl,
     accentColorId,
     setAccentColorId,
     themeMode,
     setThemeMode,
   } = useOSSettings();
+
+  const notifySaved = () => {
+    notify({
+      title: t("notify.settingsSaved"),
+      tone: "success",
+    });
+  };
+
+  const handleWallpaperUpload = (file: File | undefined) => {
+    if (!file || !file.type.startsWith("image/")) {
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setCustomWallpaperDataUrl(reader.result);
+        notifySaved();
+      }
+    };
+
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div className="space-y-5 text-sm text-slate-200">
@@ -43,7 +71,10 @@ export function SettingsApp() {
                   ? "border-[rgba(var(--os-accent-rgb),0.55)] bg-[rgba(var(--os-accent-rgb),0.16)]"
                   : "border-white/10 bg-white/5 hover:bg-white/10"
               )}
-              onClick={() => setThemeMode(mode)}
+              onClick={() => {
+                setThemeMode(mode);
+                notifySaved();
+              }}
             >
               <p className="font-medium text-white">
                 {mode === "dark" ? t("settings.dark") : t("settings.light")}
@@ -61,7 +92,7 @@ export function SettingsApp() {
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <h3 className="font-medium text-white">{t("settings.wallpaper")}</h3>
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {wallpapers.map((wallpaper) => (
             <button
               key={wallpaper.id}
@@ -72,7 +103,10 @@ export function SettingsApp() {
                   ? "border-[rgba(var(--os-accent-rgb),0.7)]"
                   : "border-white/10 hover:border-white/25"
               )}
-              onClick={() => setWallpaperId(wallpaper.id)}
+              onClick={() => {
+                setWallpaperId(wallpaper.id);
+                notifySaved();
+              }}
             >
               <span
                 className="block h-20"
@@ -83,6 +117,59 @@ export function SettingsApp() {
               </span>
             </button>
           ))}
+
+          {customWallpaperDataUrl && (
+            <button
+              type="button"
+              className={clsx(
+                "overflow-hidden rounded-2xl border text-left transition",
+                wallpaperId === "custom"
+                  ? "border-[rgba(var(--os-accent-rgb),0.7)]"
+                  : "border-white/10 hover:border-white/25"
+              )}
+              onClick={() => {
+                setWallpaperId("custom");
+                notifySaved();
+              }}
+            >
+              <span
+                className="block h-20 bg-cover bg-center"
+                style={{ backgroundImage: `url("${customWallpaperDataUrl}")` }}
+              />
+              <span className="block px-3 py-2 text-xs text-slate-200">
+                Custom
+              </span>
+            </button>
+          )}
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-white/10 bg-black/10 p-4">
+          <h4 className="font-medium text-white">{t("settings.customWallpaper")}</h4>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <label className="cursor-pointer rounded-2xl border border-[rgba(var(--os-accent-rgb),0.45)] bg-[rgba(var(--os-accent-rgb),0.12)] px-4 py-2 text-sm text-white transition hover:bg-[rgba(var(--os-accent-rgb),0.22)]">
+              {t("settings.uploadWallpaper")}
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(event) => handleWallpaperUpload(event.target.files?.[0])}
+              />
+            </label>
+
+            {customWallpaperDataUrl && (
+              <button
+                type="button"
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+                onClick={() => {
+                  setCustomWallpaperDataUrl(null);
+                  notifySaved();
+                }}
+              >
+                {t("settings.clearCustomWallpaper")}
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
@@ -100,7 +187,10 @@ export function SettingsApp() {
                   ? "border-white/40 bg-white/15"
                   : "border-white/10 bg-white/5 hover:bg-white/10"
               )}
-              onClick={() => setAccentColorId(accent.id)}
+              onClick={() => {
+                setAccentColorId(accent.id);
+                notifySaved();
+              }}
             >
               <span
                 className="h-5 w-5 rounded-full"
@@ -124,7 +214,10 @@ export function SettingsApp() {
                 ? "border-[rgba(var(--os-accent-rgb),0.55)] bg-[rgba(var(--os-accent-rgb),0.16)]"
                 : "border-white/10 bg-white/5 hover:bg-white/10"
             )}
-            onClick={() => setLanguage("tr")}
+            onClick={() => {
+              setLanguage("tr");
+              notifySaved();
+            }}
           >
             Türkçe
           </button>
@@ -137,7 +230,10 @@ export function SettingsApp() {
                 ? "border-[rgba(var(--os-accent-rgb),0.55)] bg-[rgba(var(--os-accent-rgb),0.16)]"
                 : "border-white/10 bg-white/5 hover:bg-white/10"
             )}
-            onClick={() => setLanguage("en")}
+            onClick={() => {
+              setLanguage("en");
+              notifySaved();
+            }}
           >
             English
           </button>

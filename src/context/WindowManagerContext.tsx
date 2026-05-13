@@ -12,6 +12,7 @@ import { appRegistry } from "@/config/appRegistry";
 import type {
   OSWindow,
   WindowBounds,
+  WindowLaunchData,
   WindowPosition,
   WindowSize,
 } from "@/types/window";
@@ -23,7 +24,7 @@ type WindowManagerState = {
 };
 
 type WindowManagerAction =
-  | { type: "OPEN_APP"; appId: string }
+  | { type: "OPEN_APP"; appId: string; launchData?: WindowLaunchData }
   | { type: "FOCUS_WINDOW"; instanceId: string }
   | { type: "CLOSE_WINDOW"; instanceId: string }
   | { type: "MINIMIZE_WINDOW"; instanceId: string }
@@ -48,7 +49,7 @@ type WindowManagerContextValue = {
   windows: OSWindow[];
   activeWindowId: string | null;
 
-  openApp: (appId: string) => void;
+  openApp: (appId: string, launchData?: WindowLaunchData) => void;
   focusWindow: (instanceId: string) => void;
   closeWindow: (instanceId: string) => void;
   minimizeWindow: (instanceId: string) => void;
@@ -132,6 +133,7 @@ function windowManagerReducer(
                   ...windowItem,
                   minimized: false,
                   zIndex: nextZ,
+                  launchData: action.launchData ?? windowItem.launchData,
                 }
               : windowItem
           ),
@@ -144,6 +146,7 @@ function windowManagerReducer(
         instanceId: createInstanceId(app.id),
         appId: app.id,
         title: app.title,
+        launchData: action.launchData,
 
         position: app.defaultPosition
           ? {
@@ -323,7 +326,8 @@ export function WindowManagerProvider({ children }: { children: ReactNode }) {
       windows: state.windows,
       activeWindowId: state.activeWindowId,
 
-      openApp: (appId) => dispatch({ type: "OPEN_APP", appId }),
+      openApp: (appId, launchData) =>
+        dispatch({ type: "OPEN_APP", appId, launchData }),
 
       focusWindow: (instanceId) =>
         dispatch({ type: "FOCUS_WINDOW", instanceId }),

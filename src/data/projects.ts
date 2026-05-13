@@ -7,7 +7,8 @@ export type PortfolioProject = {
   title: string;
   category: LocalizedText;
   description: LocalizedText;
-  bullets: LocalizedText[];
+  whatBuilt: LocalizedText[];
+  whatLearned: LocalizedText[];
   stack: string[];
   status: LocalizedText;
   previewUrl?: string;
@@ -27,18 +28,28 @@ export const portfolioProjects: PortfolioProject[] = [
       tr: "Timer, XP, ödüller, kozmetikler, takvim, hatırlatıcılar, pet sistemi ve multiplayer lobby fikrini tek üründe birleştiren focus-productivity app konsepti.",
       en: "A focus-productivity app concept that combines the timer, XP, rewards, cosmetics, calendar, reminders, pet system, and multiplayer lobby idea in one product.",
     },
-    bullets: [
+    whatBuilt: [
       {
         tr: "XP, coin ve kozmetiklerle oyunlaştırılmış odak sistemi.",
-        en: "Gamified focus system with XP, coins, and cosmetics.",
+        en: "A gamified focus system with XP, coins, and cosmetics.",
       },
       {
-        tr: "Flutter ile gerçek ürün gibi şekillendirildi.",
-        en: "Built with Flutter and shaped like a real product.",
+        tr: "Flutter ile gerçek ürün gibi şekillenen mobil app yapısı.",
+        en: "A mobile app structure shaped like a real product using Flutter.",
       },
       {
-        tr: "Productivity logic ile playful UI düşüncesini karıştırıyor.",
-        en: "Mixes productivity logic with playful UI thinking.",
+        tr: "Pet room, shop, focus timer ve multiplayer lobby fikri.",
+        en: "Pet room, shop, focus timer, and multiplayer lobby concept.",
+      },
+    ],
+    whatLearned: [
+      {
+        tr: "Ürün fikrini sadece UI olarak değil, motivation loop olarak düşünmeyi öğrendim.",
+        en: "I learned to think about the product not only as UI, but as a motivation loop.",
+      },
+      {
+        tr: "State, navigation ve feature scope kontrolünün önemini gördüm.",
+        en: "I understood the importance of state, navigation, and feature scope control.",
       },
     ],
     stack: ["Flutter", "Dart", "Supabase", "Gamification"],
@@ -61,18 +72,20 @@ export const portfolioProjects: PortfolioProject[] = [
       tr: "Catudy konseptini bilingual içerik, feature bölümleri, demo linkleri ve daha net ürün sunumuyla anlatan landing page.",
       en: "A website to demonstrate the Catudy concept with bilingual content, feature sections, demo links, and a clearer product presentation.",
     },
-    bullets: [
+    whatBuilt: [
       {
-        tr: "Ürün fikrini temiz landing page formatında açıklar.",
-        en: "Explains the product idea in a clean landing page format.",
+        tr: "TR/EN destekli product landing page.",
+        en: "TR/EN product landing page.",
       },
       {
-        tr: "Demo / APK yönlendirmeleri ve feature breakdown içerir.",
-        en: "Includes demo / APK directions and feature breakdowns.",
+        tr: "Feature kartları, demo yönlendirmeleri ve ürün anlatımı.",
+        en: "Feature cards, demo directions, and product explanation.",
       },
+    ],
+    whatLearned: [
       {
-        tr: "Uygulamayı gerçek release gibi sunmak için tasarlandı.",
-        en: "Designed to present the app like a real release.",
+        tr: "Bir uygulama fikrini sadece yapmak değil, anlaşılır şekilde sunmak gerektiğini öğrendim.",
+        en: "I learned that building an app idea is not enough; it also needs to be presented clearly.",
       },
     ],
     stack: ["HTML", "CSS", "JavaScript", "GitHub Pages"],
@@ -95,18 +108,20 @@ export const portfolioProjects: PortfolioProject[] = [
       tr: "Dermatoloji kliniği için service sections, appointment CTA, temiz yapı ve güven odaklı sunum stili içeren website.",
       en: "A website for a dermatology clinic with service sections, appointment CTA, a clean structure, and a more trust-based presentation style.",
     },
-    bullets: [
+    whatBuilt: [
       {
-        tr: "Clarity, trust ve servislere hızlı erişime odaklanır.",
-        en: "Focuses on clarity, trust, and fast access to services.",
+        tr: "Medical aesthetics odaklı responsive website.",
+        en: "Responsive website focused on medical aesthetics.",
       },
       {
-        tr: "Medical aesthetics content ve appointment flow içerir.",
-        en: "Includes medical aesthetics content and appointment flow.",
+        tr: "Servis bölümleri ve appointment CTA yapısı.",
+        en: "Service sections and appointment CTA structure.",
       },
+    ],
+    whatLearned: [
       {
-        tr: "Kendi ürün fikirlerim dışında da site kurabildiğimi gösterir.",
-        en: "Shows I can build outside my own product ideas too.",
+        tr: "Kişisel ürünlerden farklı olarak daha güven veren ve net bir client-site dili kurmayı öğrendim.",
+        en: "I learned to create a more trustworthy and clear client-site language outside my own product ideas.",
       },
     ],
     stack: ["HTML", "CSS", "JavaScript", "Responsive"],
@@ -129,18 +144,20 @@ export const portfolioProjects: PortfolioProject[] = [
       tr: "Gameplay logic, animasyonlar, scene transitions ve orijinal müzik içeren narrative mini-game.",
       en: "A narrative mini-game developed solo, including gameplay logic, animations, scene transitions, and original music.",
     },
-    bullets: [
+    whatBuilt: [
       {
-        tr: "Gameplay logic ve sahne geçişleri geliştirildi.",
-        en: "Gameplay logic and scene transitions were developed.",
+        tr: "Gameplay logic, sahne geçişleri ve animasyonlar.",
+        en: "Gameplay logic, scene transitions, and animations.",
       },
       {
-        tr: "Animasyon ve müzik tarafı da projeye dahil edildi.",
-        en: "Animation and music were also included in the project.",
+        tr: "Projenin müzik tarafını da kendim ürettim.",
+        en: "I also created the music side of the project myself.",
       },
+    ],
+    whatLearned: [
       {
-        tr: "Kod, görsel ve ses tarafını aynı fikirde birleştiren solo deneyim.",
-        en: "A solo experiment combining code, visuals, and audio around one idea.",
+        tr: "Kod, görsel ve sesin aynı deneyimde nasıl birleştiğini daha iyi anladım.",
+        en: "I better understood how code, visuals, and sound can come together in one experience.",
       },
     ],
     stack: ["Unity", "Animation", "Music"],
@@ -160,18 +177,20 @@ export const portfolioProjects: PortfolioProject[] = [
       tr: "Bu portfolio sitesinin kendisi: çalışmaları daha cinematic ve kişisel bir hisle sunmak için tasarlanmış bilingual, animated portfolio.",
       en: "This website itself: a bilingual, animated portfolio built to present work with a more cinematic and personal feeling.",
     },
-    bullets: [
+    whatBuilt: [
       {
-        tr: "Bilingual içerik yapısı.",
-        en: "Bilingual content structure.",
+        tr: "Bilingual portfolio yapısı.",
+        en: "Bilingual portfolio structure.",
       },
       {
-        tr: "Motion ve kişisel görsel stil.",
+        tr: "Motion ve kişisel görsel dil.",
         en: "Motion and personal visual style.",
       },
+    ],
+    whatLearned: [
       {
-        tr: "Projeleri klasik CV formatından daha interaktif gösterme denemesi.",
-        en: "An attempt to present projects in a more interactive way than a classic CV.",
+        tr: "Portfolyonun sadece bilgi değil, karakter de göstermesi gerektiğini gördüm.",
+        en: "I learned that a portfolio should show not only information, but also character.",
       },
     ],
     stack: ["HTML", "CSS", "JavaScript", "Motion"],

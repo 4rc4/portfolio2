@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderPlus, Image, RefreshCcw } from "lucide-react";
+import { FolderPlus, Image, RefreshCcw, Terminal } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { useI18n } from "@/context/LanguageContext";
@@ -11,6 +11,7 @@ type DesktopContextMenuProps = {
   onClose: () => void;
   onChangeWallpaper: () => void;
   onCreateFolder: () => void;
+  onOpenTerminalHere: () => void;
 };
 
 export function DesktopContextMenu({
@@ -19,10 +20,16 @@ export function DesktopContextMenu({
   onClose,
   onChangeWallpaper,
   onCreateFolder,
+  onOpenTerminalHere,
 }: DesktopContextMenuProps) {
   const { t } = useI18n();
 
   const menuItems = [
+    {
+      label: t("desktop.openTerminalHere"),
+      icon: Terminal,
+      action: onOpenTerminalHere,
+    },
     {
       label: t("desktop.changeWallpaper"),
       icon: Image,

@@ -18,8 +18,11 @@ export type WindowBounds = {
   size: WindowSize;
 };
 
+export type WindowLaunchData = Record<string, unknown>;
+
 export type AppComponentProps = {
   windowId: string;
+  launchData?: WindowLaunchData;
 };
 
 export type AppDefinition = {
@@ -43,6 +46,7 @@ export type OSWindow = {
   instanceId: string;
   appId: string;
   title: string;
+  launchData?: WindowLaunchData;
 
   position: WindowPosition;
   size: WindowSize;

@@ -2,6 +2,7 @@
 
 import { AnimatePresence } from "framer-motion";
 import { Folder } from "lucide-react";
+import clsx from "clsx";
 import { useEffect, useState } from "react";
 
 import { appRegistry, desktopAppIds } from "@/config/appRegistry";
@@ -52,6 +53,7 @@ export function Desktop() {
 
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   useEffect(() => {
     setFolders(readStoredFolders());
@@ -92,11 +94,12 @@ export function Desktop() {
     <section
       className="absolute inset-0 z-0 px-6 pb-24 pt-6 max-sm:px-3 max-sm:pt-4"
       aria-label={t("system.desktop")}
+      onClick={() => setSelectedItemId(null)}
       onContextMenu={(event) => {
         event.preventDefault();
         setContextMenu({
           x: Math.min(event.clientX, window.innerWidth - 240),
-          y: Math.min(event.clientY, window.innerHeight - 190),
+          y: Math.min(event.clientY, window.innerHeight - 220),
         });
       }}
     >
@@ -104,16 +107,35 @@ export function Desktop() {
         {desktopAppIds.map((appId) => {
           const app = appRegistry[appId];
           const Icon = app.icon;
+          const isSelected = selectedItemId === app.id;
 
           return (
             <button
               key={app.id}
               type="button"
-              className="group flex w-24 flex-col items-center gap-2 rounded-2xl p-2 text-center text-white outline-none transition hover:bg-white/10 focus-visible:bg-white/10 max-sm:w-20"
+              className={clsx(
+                "group flex w-24 flex-col items-center gap-2 rounded-2xl p-2 text-center text-white outline-none transition focus-visible:bg-white/10 max-sm:w-20",
+                isSelected ? "bg-white/15" : "hover:bg-white/10"
+              )}
+              onClick={(event) => {
+                event.stopPropagation();
+                setSelectedItemId(app.id);
+              }}
               onDoubleClick={() => openApp(app.id)}
-              onClick={() => openApp(app.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  openApp(app.id);
+                }
+              }}
             >
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/35 shadow-xl backdrop-blur-md transition group-hover:scale-105 group-hover:bg-white/15 max-sm:h-12 max-sm:w-12">
+              <span
+                className={clsx(
+                  "flex h-14 w-14 items-center justify-center rounded-2xl border shadow-xl backdrop-blur-md transition group-hover:scale-105 max-sm:h-12 max-sm:w-12",
+                  isSelected
+                    ? "border-[rgba(var(--os-accent-rgb),0.55)] bg-[rgba(var(--os-accent-rgb),0.18)]"
+                    : "border-white/10 bg-slate-950/35 group-hover:bg-white/15"
+                )}
+              >
                 <Icon size={28} />
               </span>
 
@@ -124,22 +146,40 @@ export function Desktop() {
           );
         })}
 
-        {folders.map((folder) => (
-          <button
-            key={folder.id}
-            type="button"
-            className="group flex w-24 flex-col items-center gap-2 rounded-2xl p-2 text-center text-white outline-none transition hover:bg-white/10 focus-visible:bg-white/10 max-sm:w-20"
-            title={t("desktop.folderHint")}
-          >
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/35 shadow-xl backdrop-blur-md transition group-hover:scale-105 group-hover:bg-white/15 max-sm:h-12 max-sm:w-12">
-              <Folder size={30} />
-            </span>
+        {folders.map((folder) => {
+          const isSelected = selectedItemId === folder.id;
 
-            <span className="line-clamp-2 text-xs font-medium drop-shadow max-sm:text-[11px]">
-              {folder.name}
-            </span>
-          </button>
-        ))}
+          return (
+            <button
+              key={folder.id}
+              type="button"
+              className={clsx(
+                "group flex w-24 flex-col items-center gap-2 rounded-2xl p-2 text-center text-white outline-none transition focus-visible:bg-white/10 max-sm:w-20",
+                isSelected ? "bg-white/15" : "hover:bg-white/10"
+              )}
+              title={t("desktop.folderHint")}
+              onClick={(event) => {
+                event.stopPropagation();
+                setSelectedItemId(folder.id);
+              }}
+            >
+              <span
+                className={clsx(
+                  "flex h-14 w-14 items-center justify-center rounded-2xl border shadow-xl backdrop-blur-md transition group-hover:scale-105 max-sm:h-12 max-sm:w-12",
+                  isSelected
+                    ? "border-[rgba(var(--os-accent-rgb),0.55)] bg-[rgba(var(--os-accent-rgb),0.18)]"
+                    : "border-white/10 bg-slate-950/35 group-hover:bg-white/15"
+                )}
+              >
+                <Folder size={30} />
+              </span>
+
+              <span className="line-clamp-2 text-xs font-medium drop-shadow max-sm:text-[11px]">
+                {folder.name}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <AnimatePresence>
@@ -150,6 +190,9 @@ export function Desktop() {
             onClose={() => setContextMenu(null)}
             onChangeWallpaper={nextWallpaper}
             onCreateFolder={createFolder}
+            onOpenTerminalHere={() =>
+              openApp("terminal", { initialPath: "/home/yusuf-arca-cicek/desktop" })
+            }
           />
         )}
       </AnimatePresence>

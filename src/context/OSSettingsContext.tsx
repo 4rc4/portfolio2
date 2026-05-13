@@ -20,6 +20,9 @@ type OSSettingsContextValue = {
   setWallpaperId: (wallpaperId: string) => void;
   nextWallpaper: () => void;
 
+  customWallpaperDataUrl: string | null;
+  setCustomWallpaperDataUrl: (dataUrl: string | null) => void;
+
   accentColorId: string;
   accentColor: (typeof accentColors)[number];
   setAccentColorId: (accentColorId: string) => void;
@@ -34,6 +37,7 @@ const STORAGE_KEY = "portfolio-os-settings";
 
 type StoredSettings = {
   wallpaperId?: string;
+  customWallpaperDataUrl?: string | null;
   accentColorId?: string;
   themeMode?: ThemeMode;
 };
@@ -62,6 +66,7 @@ function readStoredSettings(): StoredSettings {
 
 export function OSSettingsProvider({ children }: { children: ReactNode }) {
   const [wallpaperId, setWallpaperIdState] = useState(wallpapers[0].id);
+  const [customWallpaperDataUrl, setCustomWallpaperDataUrlState] = useState<string | null>(null);
   const [accentColorId, setAccentColorIdState] = useState(accentColors[0].id);
   const [themeMode, setThemeModeState] = useState<ThemeMode>("dark");
 
@@ -70,9 +75,14 @@ export function OSSettingsProvider({ children }: { children: ReactNode }) {
 
     if (
       storedSettings.wallpaperId &&
-      wallpapers.some((wallpaper) => wallpaper.id === storedSettings.wallpaperId)
+      (storedSettings.wallpaperId === "custom" ||
+        wallpapers.some((wallpaper) => wallpaper.id === storedSettings.wallpaperId))
     ) {
       setWallpaperIdState(storedSettings.wallpaperId);
+    }
+
+    if (typeof storedSettings.customWallpaperDataUrl === "string") {
+      setCustomWallpaperDataUrlState(storedSettings.customWallpaperDataUrl);
     }
 
     if (
@@ -92,11 +102,12 @@ export function OSSettingsProvider({ children }: { children: ReactNode }) {
       STORAGE_KEY,
       JSON.stringify({
         wallpaperId,
+        customWallpaperDataUrl,
         accentColorId,
         themeMode,
       })
     );
-  }, [accentColorId, themeMode, wallpaperId]);
+  }, [accentColorId, customWallpaperDataUrl, themeMode, wallpaperId]);
 
   const activeWallpaper =
     wallpapers.find((wallpaper) => wallpaper.id === wallpaperId) ??
@@ -106,9 +117,27 @@ export function OSSettingsProvider({ children }: { children: ReactNode }) {
     accentColors.find((accent) => accent.id === accentColorId) ??
     accentColors[0];
 
+  const wallpaperBackground =
+    wallpaperId === "custom" && customWallpaperDataUrl
+      ? `linear-gradient(rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.38)), url("${customWallpaperDataUrl}") center / cover no-repeat`
+      : activeWallpaper.background;
+
   const setWallpaperId = (nextWallpaperId: string) => {
-    if (wallpapers.some((wallpaper) => wallpaper.id === nextWallpaperId)) {
+    if (
+      nextWallpaperId === "custom" ||
+      wallpapers.some((wallpaper) => wallpaper.id === nextWallpaperId)
+    ) {
       setWallpaperIdState(nextWallpaperId);
+    }
+  };
+
+  const setCustomWallpaperDataUrl = (dataUrl: string | null) => {
+    setCustomWallpaperDataUrlState(dataUrl);
+
+    if (dataUrl) {
+      setWallpaperIdState("custom");
+    } else if (wallpaperId === "custom") {
+      setWallpaperIdState(wallpapers[0].id);
     }
   };
 
@@ -123,20 +152,25 @@ export function OSSettingsProvider({ children }: { children: ReactNode }) {
   };
 
   const nextWallpaper = () => {
-    const currentIndex = wallpapers.findIndex(
-      (wallpaper) => wallpaper.id === wallpaperId
-    );
+    const availableIds = customWallpaperDataUrl
+      ? [...wallpapers.map((wallpaper) => wallpaper.id), "custom"]
+      : wallpapers.map((wallpaper) => wallpaper.id);
 
-    const nextIndex = (currentIndex + 1) % wallpapers.length;
-    setWallpaperId(wallpapers[nextIndex].id);
+    const currentIndex = availableIds.indexOf(wallpaperId);
+    const nextIndex = (currentIndex + 1) % availableIds.length;
+
+    setWallpaperId(availableIds[nextIndex]);
   };
 
   const value = useMemo<OSSettingsContextValue>(
     () => ({
       wallpaperId,
-      wallpaperBackground: activeWallpaper.background,
+      wallpaperBackground,
       setWallpaperId,
       nextWallpaper,
+
+      customWallpaperDataUrl,
+      setCustomWallpaperDataUrl,
 
       accentColorId,
       accentColor,
@@ -148,8 +182,9 @@ export function OSSettingsProvider({ children }: { children: ReactNode }) {
     [
       accentColor,
       accentColorId,
-      activeWallpaper.background,
+      customWallpaperDataUrl,
       themeMode,
+      wallpaperBackground,
       wallpaperId,
     ]
   );

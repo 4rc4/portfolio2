@@ -1,13 +1,17 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import { BootScreen } from "@/components/os/BootScreen";
+import { CommandPalette } from "@/components/os/CommandPalette";
 import { Desktop } from "@/components/os/Desktop";
+import { NotificationCenter } from "@/components/os/NotificationCenter";
 import { Taskbar } from "@/components/os/Taskbar";
 import { WindowManager } from "@/components/os/WindowManager";
+import { useI18n } from "@/context/LanguageContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { NotificationProvider, useNotifications } from "@/context/NotificationContext";
 import { OSSettingsProvider, useOSSettings } from "@/context/OSSettingsContext";
 import { WindowManagerProvider } from "@/context/WindowManagerContext";
 
@@ -17,9 +21,21 @@ type OSStyle = CSSProperties & {
 };
 
 function OSDesktopShell() {
+  const { t } = useI18n();
+  const { notify } = useNotifications();
   const { wallpaperBackground, accentColor, themeMode } = useOSSettings();
 
   const [bootComplete, setBootComplete] = useState(false);
+
+  useEffect(() => {
+    if (bootComplete) {
+      notify({
+        title: t("notify.welcome"),
+        message: t("command.hint"),
+        tone: "success",
+      });
+    }
+  }, [bootComplete, notify, t]);
 
   const background =
     themeMode === "light"
@@ -45,6 +61,8 @@ function OSDesktopShell() {
           <Desktop />
           <WindowManager />
           <Taskbar />
+          <CommandPalette />
+          <NotificationCenter />
         </>
       )}
 
@@ -62,7 +80,9 @@ export function OSRoot() {
     <LanguageProvider>
       <WindowManagerProvider>
         <OSSettingsProvider>
-          <OSDesktopShell />
+          <NotificationProvider>
+            <OSDesktopShell />
+          </NotificationProvider>
         </OSSettingsProvider>
       </WindowManagerProvider>
     </LanguageProvider>
