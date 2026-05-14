@@ -134,6 +134,48 @@ export const portfolioProjects: PortfolioProject[] = [
     previewUrl: "https://4rc4.github.io/drhicranunlu/",
   },
   {
+    id: "raisegpt",
+    title: "RaiseGPT",
+    category: {
+      tr: "Computer vision / desktop automation",
+      en: "Computer vision / desktop automation",
+    },
+    description: {
+      tr: "Webcam üzerinden el hareketlerini yerel olarak algılayıp ChatGPT Windows uygulamasının sesli sohbetini klavye ve fare otomasyonuyla kontrol eden yardımcı uygulama.",
+      en: "A local webcam-based utility that detects hand gestures and controls the ChatGPT Windows app voice chat through keyboard and mouse automation.",
+    },
+    whatBuilt: [
+      {
+        tr: "İki açık el hareketiyle ChatGPT sesli sohbet kısayolunu tetikleyen gesture workflow.",
+        en: "A gesture workflow that triggers the ChatGPT voice shortcut when two open hands are detected.",
+      },
+      {
+        tr: "İki yumruk hareketiyle kaydedilmiş stop/end pozisyonuna tıklayan kapatma akışı.",
+        en: "A closing flow that clicks a saved stop/end position when two fists are detected.",
+      },
+      {
+        tr: "Installer, batch menü, ayarlar dosyası ve background çalışma modu.",
+        en: "Installer, batch menu, settings file, and background running mode.",
+      },
+    ],
+    whatLearned: [
+      {
+        tr: "Computer vision girdisini gerçek masaüstü otomasyonuna bağlamayı öğrendim.",
+        en: "I learned how to connect computer vision input to real desktop automation.",
+      },
+      {
+        tr: "Kamera verisini lokal işleme, kullanıcı kontrolü ve pratik ayar dosyası tasarımının önemini gördüm.",
+        en: "I learned the importance of local camera processing, user control, and practical settings-file design.",
+      },
+    ],
+    stack: ["Python", "OpenCV", "MediaPipe", "PyAutoGUI", "Batchfile", "Windows Automation"],
+    status: {
+      tr: "Çalışan Windows utility",
+      en: "Working Windows utility",
+    },
+    repoUrl: "https://github.com/4rc4/RaiseGPT",
+  },
+  {
     id: "unity-story-game",
     title: "Unity Story Game",
     category: {
