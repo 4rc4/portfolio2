@@ -35,16 +35,3 @@ The static output is generated in:
 out/
 ```
 
-## GitHub Pages
-
-Configured for:
-
-```txt
-https://4rc4.github.io/portfolio2/
-```
-
-Repository setting:
-
-```txt
-Settings → Pages → Source → GitHub Actions
-```
