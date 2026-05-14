@@ -9,11 +9,14 @@ import { Desktop } from "@/components/os/Desktop";
 import { DesktopWidgets } from "@/components/os/DesktopWidgets";
 import { NotificationCenter } from "@/components/os/NotificationCenter";
 import { Taskbar } from "@/components/os/Taskbar";
+import { TaskSwitcher } from "@/components/os/TaskSwitcher";
+import { PWARegister } from "@/components/os/PWARegister";
 import { WindowManager } from "@/components/os/WindowManager";
 import { useI18n } from "@/context/LanguageContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { NotificationProvider, useNotifications } from "@/context/NotificationContext";
 import { OSSettingsProvider, useOSSettings } from "@/context/OSSettingsContext";
+import { RecycleBinProvider } from "@/context/RecycleBinContext";
 import { WindowManagerProvider } from "@/context/WindowManagerContext";
 
 type OSStyle = CSSProperties & {
@@ -64,7 +67,9 @@ function OSDesktopShell() {
           <WindowManager />
           <Taskbar />
           <CommandPalette />
+          <TaskSwitcher />
           <NotificationCenter />
+          <PWARegister />
         </>
       )}
 
@@ -83,7 +88,9 @@ export function OSRoot() {
       <WindowManagerProvider>
         <OSSettingsProvider>
           <NotificationProvider>
-            <OSDesktopShell />
+            <RecycleBinProvider>
+              <OSDesktopShell />
+            </RecycleBinProvider>
           </NotificationProvider>
         </OSSettingsProvider>
       </WindowManagerProvider>

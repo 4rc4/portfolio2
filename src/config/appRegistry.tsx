@@ -10,6 +10,7 @@ import {
   Mail,
   Settings,
   Terminal,
+  Trash2,
 } from "lucide-react";
 
 import { AboutApp } from "@/apps/AboutApp";
@@ -17,6 +18,7 @@ import { BrowserApp } from "@/apps/BrowserApp";
 import { ContactApp } from "@/apps/ContactApp";
 import { CVApp } from "@/apps/CVApp";
 import { NotepadApp } from "@/apps/NotepadApp";
+import { RecycleBinApp } from "@/apps/RecycleBinApp";
 import { ExperienceApp } from "@/apps/ExperienceApp";
 import { FileExplorerApp } from "@/apps/FileExplorerApp";
 import { ProjectsApp } from "@/apps/ProjectsApp";
@@ -187,6 +189,21 @@ export const appRegistry: Record<string, AppDefinition> = {
     defaultPosition: { x: 320, y: 120 },
     defaultSize: { width: 760, height: 540 },
     minSize: { width: 520, height: 360 },
+    resizable: true,
+    singleInstance: true,
+    showOnDesktop: true,
+    showInStartMenu: true,
+  },
+
+  recycleBin: {
+    id: "recycleBin",
+    title: "Recycle Bin",
+    titleKey: "app.recycleBin.title",
+    icon: Trash2,
+    component: RecycleBinApp,
+    defaultPosition: { x: 340, y: 120 },
+    defaultSize: { width: 680, height: 500 },
+    minSize: { width: 460, height: 340 },
     resizable: true,
     singleInstance: true,
     showOnDesktop: true,

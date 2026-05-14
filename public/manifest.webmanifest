@@ -1,0 +1,18 @@
+{
+  "name": "Yusuf Arca Çiçek — Portfolio OS",
+  "short_name": "Portfolio OS",
+  "description": "Interactive web-based operating system portfolio.",
+  "start_url": "/portfolio2/",
+  "scope": "/portfolio2/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#22d3ee",
+  "icons": [
+    {
+      "src": "/portfolio2/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

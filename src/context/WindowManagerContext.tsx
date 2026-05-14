@@ -29,21 +29,10 @@ type WindowManagerAction =
   | { type: "CLOSE_WINDOW"; instanceId: string }
   | { type: "MINIMIZE_WINDOW"; instanceId: string }
   | { type: "SHOW_DESKTOP" }
-  | {
-      type: "TOGGLE_MAXIMIZE_WINDOW";
-      instanceId: string;
-      maximizedBounds: WindowBounds;
-    }
-  | {
-      type: "UPDATE_WINDOW_POSITION";
-      instanceId: string;
-      position: WindowPosition;
-    }
-  | {
-      type: "UPDATE_WINDOW_SIZE";
-      instanceId: string;
-      size: WindowSize;
-    };
+  | { type: "SET_WINDOW_BOUNDS"; instanceId: string; bounds: WindowBounds; maximized?: boolean }
+  | { type: "TOGGLE_MAXIMIZE_WINDOW"; instanceId: string; maximizedBounds: WindowBounds }
+  | { type: "UPDATE_WINDOW_POSITION"; instanceId: string; position: WindowPosition }
+  | { type: "UPDATE_WINDOW_SIZE"; instanceId: string; size: WindowSize };
 
 type WindowManagerContextValue = {
   windows: OSWindow[];
@@ -54,14 +43,9 @@ type WindowManagerContextValue = {
   closeWindow: (instanceId: string) => void;
   minimizeWindow: (instanceId: string) => void;
   showDesktop: () => void;
-  toggleMaximizeWindow: (
-    instanceId: string,
-    maximizedBounds: WindowBounds
-  ) => void;
-  updateWindowPosition: (
-    instanceId: string,
-    position: WindowPosition
-  ) => void;
+  setWindowBounds: (instanceId: string, bounds: WindowBounds, maximized?: boolean) => void;
+  toggleMaximizeWindow: (instanceId: string, maximizedBounds: WindowBounds) => void;
+  updateWindowPosition: (instanceId: string, position: WindowPosition) => void;
   updateWindowSize: (instanceId: string, size: WindowSize) => void;
 };
 
@@ -71,9 +55,7 @@ const initialState: WindowManagerState = {
   zCounter: 20,
 };
 
-const WindowManagerContext = createContext<WindowManagerContextValue | null>(
-  null
-);
+const WindowManagerContext = createContext<WindowManagerContextValue | null>(null);
 
 function createInstanceId(appId: string) {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -90,11 +72,9 @@ function getTopWindowId(windows: OSWindow[]) {
     return null;
   }
 
-  return visibleWindows.reduce((topWindow, currentWindow) => {
-    return currentWindow.zIndex > topWindow.zIndex
-      ? currentWindow
-      : topWindow;
-  }).instanceId;
+  return visibleWindows.reduce((topWindow, currentWindow) =>
+    currentWindow.zIndex > topWindow.zIndex ? currentWindow : topWindow
+  ).instanceId;
 }
 
 function clampSize(size: WindowSize, minSize: WindowSize): WindowSize {
@@ -104,10 +84,7 @@ function clampSize(size: WindowSize, minSize: WindowSize): WindowSize {
   };
 }
 
-function windowManagerReducer(
-  state: WindowManagerState,
-  action: WindowManagerAction
-): WindowManagerState {
+function windowManagerReducer(state: WindowManagerState, action: WindowManagerAction): WindowManagerState {
   switch (action.type) {
     case "OPEN_APP": {
       const app = appRegistry[action.appId];
@@ -116,10 +93,7 @@ function windowManagerReducer(
         return state;
       }
 
-      const existingWindow = state.windows.find(
-        (windowItem) => windowItem.appId === action.appId
-      );
-
+      const existingWindow = state.windows.find((windowItem) => windowItem.appId === action.appId);
       const nextZ = state.zCounter + 1;
 
       if (app.singleInstance && existingWindow) {
@@ -141,28 +115,19 @@ function windowManagerReducer(
       }
 
       const offset = state.windows.length * 28;
+      const minSize = app.minSize ?? { width: 320, height: 220 };
 
       const newWindow: OSWindow = {
         instanceId: createInstanceId(app.id),
         appId: app.id,
         title: app.title,
         launchData: action.launchData,
-
         position: app.defaultPosition
-          ? {
-              x: app.defaultPosition.x + offset,
-              y: app.defaultPosition.y + offset,
-            }
-          : {
-              x: 120 + offset,
-              y: 80 + offset,
-            },
-
-        size: app.defaultSize,
-        minSize: app.minSize ?? { width: 320, height: 220 },
-
+          ? { x: app.defaultPosition.x + offset, y: app.defaultPosition.y + offset }
+          : { x: 120 + offset, y: 80 + offset },
+        size: clampSize(app.defaultSize, minSize),
+        minSize,
         zIndex: nextZ,
-
         minimized: false,
         maximized: false,
       };
@@ -176,9 +141,7 @@ function windowManagerReducer(
     }
 
     case "FOCUS_WINDOW": {
-      const targetWindow = state.windows.find(
-        (windowItem) => windowItem.instanceId === action.instanceId
-      );
+      const targetWindow = state.windows.find((windowItem) => windowItem.instanceId === action.instanceId);
 
       if (!targetWindow) {
         return state;
@@ -196,20 +159,14 @@ function windowManagerReducer(
         activeWindowId: action.instanceId,
         windows: state.windows.map((windowItem) =>
           windowItem.instanceId === action.instanceId
-            ? {
-                ...windowItem,
-                minimized: false,
-                zIndex: nextZ,
-              }
+            ? { ...windowItem, minimized: false, zIndex: nextZ }
             : windowItem
         ),
       };
     }
 
     case "CLOSE_WINDOW": {
-      const nextWindows = state.windows.filter(
-        (windowItem) => windowItem.instanceId !== action.instanceId
-      );
+      const nextWindows = state.windows.filter((windowItem) => windowItem.instanceId !== action.instanceId);
 
       return {
         ...state,
@@ -220,12 +177,7 @@ function windowManagerReducer(
 
     case "MINIMIZE_WINDOW": {
       const nextWindows = state.windows.map((windowItem) =>
-        windowItem.instanceId === action.instanceId
-          ? {
-              ...windowItem,
-              minimized: true,
-            }
-          : windowItem
+        windowItem.instanceId === action.instanceId ? { ...windowItem, minimized: true } : windowItem
       );
 
       return {
@@ -239,10 +191,34 @@ function windowManagerReducer(
       return {
         ...state,
         activeWindowId: null,
-        windows: state.windows.map((windowItem) => ({
-          ...windowItem,
-          minimized: true,
-        })),
+        windows: state.windows.map((windowItem) => ({ ...windowItem, minimized: true })),
+      };
+    }
+
+    case "SET_WINDOW_BOUNDS": {
+      const nextZ = state.zCounter + 1;
+
+      return {
+        ...state,
+        zCounter: nextZ,
+        activeWindowId: action.instanceId,
+        windows: state.windows.map((windowItem) => {
+          if (windowItem.instanceId !== action.instanceId) {
+            return windowItem;
+          }
+
+          return {
+            ...windowItem,
+            minimized: false,
+            maximized: Boolean(action.maximized),
+            previousBounds: action.maximized
+              ? windowItem.previousBounds ?? { position: windowItem.position, size: windowItem.size }
+              : undefined,
+            position: action.bounds.position,
+            size: clampSize(action.bounds.size, windowItem.minSize),
+            zIndex: nextZ,
+          };
+        }),
       };
     }
 
@@ -272,12 +248,9 @@ function windowManagerReducer(
           return {
             ...windowItem,
             maximized: true,
-            previousBounds: {
-              position: windowItem.position,
-              size: windowItem.size,
-            },
+            previousBounds: { position: windowItem.position, size: windowItem.size },
             position: action.maximizedBounds.position,
-            size: action.maximizedBounds.size,
+            size: clampSize(action.maximizedBounds.size, windowItem.minSize),
             zIndex: nextZ,
             minimized: false,
           };
@@ -290,10 +263,7 @@ function windowManagerReducer(
         ...state,
         windows: state.windows.map((windowItem) =>
           windowItem.instanceId === action.instanceId && !windowItem.maximized
-            ? {
-                ...windowItem,
-                position: action.position,
-              }
+            ? { ...windowItem, position: action.position }
             : windowItem
         ),
       };
@@ -304,10 +274,7 @@ function windowManagerReducer(
         ...state,
         windows: state.windows.map((windowItem) =>
           windowItem.instanceId === action.instanceId && !windowItem.maximized
-            ? {
-                ...windowItem,
-                size: clampSize(action.size, windowItem.minSize),
-              }
+            ? { ...windowItem, size: clampSize(action.size, windowItem.minSize) }
             : windowItem
         ),
       };
@@ -326,40 +293,19 @@ export function WindowManagerProvider({ children }: { children: ReactNode }) {
       windows: state.windows,
       activeWindowId: state.activeWindowId,
 
-      openApp: (appId, launchData) =>
-        dispatch({ type: "OPEN_APP", appId, launchData }),
-
-      focusWindow: (instanceId) =>
-        dispatch({ type: "FOCUS_WINDOW", instanceId }),
-
-      closeWindow: (instanceId) =>
-        dispatch({ type: "CLOSE_WINDOW", instanceId }),
-
-      minimizeWindow: (instanceId) =>
-        dispatch({ type: "MINIMIZE_WINDOW", instanceId }),
-
+      openApp: (appId, launchData) => dispatch({ type: "OPEN_APP", appId, launchData }),
+      focusWindow: (instanceId) => dispatch({ type: "FOCUS_WINDOW", instanceId }),
+      closeWindow: (instanceId) => dispatch({ type: "CLOSE_WINDOW", instanceId }),
+      minimizeWindow: (instanceId) => dispatch({ type: "MINIMIZE_WINDOW", instanceId }),
       showDesktop: () => dispatch({ type: "SHOW_DESKTOP" }),
-
+      setWindowBounds: (instanceId, bounds, maximized) =>
+        dispatch({ type: "SET_WINDOW_BOUNDS", instanceId, bounds, maximized }),
       toggleMaximizeWindow: (instanceId, maximizedBounds) =>
-        dispatch({
-          type: "TOGGLE_MAXIMIZE_WINDOW",
-          instanceId,
-          maximizedBounds,
-        }),
-
+        dispatch({ type: "TOGGLE_MAXIMIZE_WINDOW", instanceId, maximizedBounds }),
       updateWindowPosition: (instanceId, position) =>
-        dispatch({
-          type: "UPDATE_WINDOW_POSITION",
-          instanceId,
-          position,
-        }),
-
+        dispatch({ type: "UPDATE_WINDOW_POSITION", instanceId, position }),
       updateWindowSize: (instanceId, size) =>
-        dispatch({
-          type: "UPDATE_WINDOW_SIZE",
-          instanceId,
-          size,
-        }),
+        dispatch({ type: "UPDATE_WINDOW_SIZE", instanceId, size }),
     }),
     [state.activeWindowId, state.windows]
   );
@@ -375,9 +321,7 @@ export function useWindowManager() {
   const context = useContext(WindowManagerContext);
 
   if (!context) {
-    throw new Error(
-      "useWindowManager must be used inside WindowManagerProvider."
-    );
+    throw new Error("useWindowManager must be used inside WindowManagerProvider.");
   }
 
   return context;

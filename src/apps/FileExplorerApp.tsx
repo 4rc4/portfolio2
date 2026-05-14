@@ -118,12 +118,27 @@ export function FileExplorerApp() {
   const openNode = (node: VFSNode) => {
     if (node.type === "folder") {
       navigateTo(joinPath(currentPath, node.name));
-    } else {
-      openApp("notepad", {
-        fileName: node.name,
-        content: getPreviewText(node),
-      });
+      return;
     }
+
+    if (node.name.toLowerCase().endsWith(".url")) {
+      const url = node.description?.match(/https?:\/\/[^\s·]+/)?.[0];
+
+      if (url) {
+        openApp("browser", { url });
+        return;
+      }
+    }
+
+    if (node.name.toLowerCase().endsWith(".pdf")) {
+      openApp("cv");
+      return;
+    }
+
+    openApp("notepad", {
+      fileName: node.name,
+      content: getPreviewText(node),
+    });
   };
 
   return (

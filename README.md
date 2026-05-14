@@ -1,22 +1,20 @@
 # Portfolio OS
 
-Interactive web-based portfolio interface for Yusuf Arca Çiçek.
+Interactive web-based operating system portfolio for Yusuf Arca Çiçek.
 
-## Features
+## OS-style features
 
-- Web-based desktop interface
-- Window manager
+- Window snap zones: left, right, corners and maximize
+- Alt + Tab task switcher
 - Start menu, taskbar and control center
-- Bilingual TR / EN content
-- Project viewer
-- CV PDF viewer
-- Browser app
-- Notepad / README viewer
-- Terminal-style portfolio commands
-- File explorer with portfolio files
+- Browser app with bookmarks, history, search fallback and iframe-block fallback
+- Editable Notepad with saved notes
+- File associations from File Explorer
+- Recycle Bin for deleted folders and notes
 - Desktop widgets
-- Mobile-friendly phone mode
-- GitHub Pages deployment setup
+- Mobile phone-mode launcher
+- PWA manifest and service worker
+- GitHub Pages static export setup
 
 ## Local development
 
@@ -39,13 +37,13 @@ out/
 
 ## GitHub Pages
 
-This project is configured for:
+Configured for:
 
 ```txt
 https://4rc4.github.io/portfolio2/
 ```
 
-Required repository setting:
+Repository setting:
 
 ```txt
 Settings → Pages → Source → GitHub Actions

@@ -2,16 +2,13 @@
 
 import { motion } from "framer-motion";
 import { Maximize2, Minus, Square, X } from "lucide-react";
-import {
-  useRef,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { useRef, type PointerEvent as ReactPointerEvent } from "react";
 import clsx from "clsx";
 
 import { appRegistry } from "@/config/appRegistry";
 import { useI18n } from "@/context/LanguageContext";
 import { useWindowManager } from "@/context/WindowManagerContext";
-import type { OSWindow, WindowPosition, WindowSize } from "@/types/window";
+import type { OSWindow, WindowBounds, WindowPosition, WindowSize } from "@/types/window";
 
 type WindowProps = {
   osWindow: OSWindow;
@@ -19,6 +16,8 @@ type WindowProps = {
 
 const TASKBAR_HEIGHT = 64;
 const SCREEN_PADDING = 10;
+const EDGE_SNAP_SIZE = 10;
+const CORNER_SNAP_SIZE = 120;
 
 function clampWindowPosition(position: WindowPosition, size: WindowSize) {
   if (typeof window === "undefined") {
@@ -26,18 +25,54 @@ function clampWindowPosition(position: WindowPosition, size: WindowSize) {
   }
 
   return {
-    x: Math.max(
-      0,
-      Math.min(position.x, Math.max(0, window.innerWidth - Math.min(size.width, 160)))
-    ),
-    y: Math.max(
-      0,
-      Math.min(
-        position.y,
-        Math.max(0, window.innerHeight - TASKBAR_HEIGHT - 44)
-      )
-    ),
+    x: Math.max(0, Math.min(position.x, Math.max(0, window.innerWidth - Math.min(size.width, 160)))),
+    y: Math.max(0, Math.min(position.y, Math.max(0, window.innerHeight - TASKBAR_HEIGHT - 44))),
   };
+}
+
+function getWorkArea() {
+  return {
+    x: SCREEN_PADDING,
+    y: SCREEN_PADDING,
+    width: Math.max(320, window.innerWidth - SCREEN_PADDING * 2),
+    height: Math.max(240, window.innerHeight - TASKBAR_HEIGHT - SCREEN_PADDING * 2),
+  };
+}
+
+function getSnapBounds(clientX: number, clientY: number): { bounds: WindowBounds; maximized?: boolean } | null {
+  const area = getWorkArea();
+  const rightEdge = window.innerWidth - EDGE_SNAP_SIZE;
+  const bottomEdge = window.innerHeight - TASKBAR_HEIGHT - EDGE_SNAP_SIZE;
+
+  if (clientX <= EDGE_SNAP_SIZE && clientY <= CORNER_SNAP_SIZE) {
+    return { bounds: { position: { x: area.x, y: area.y }, size: { width: area.width / 2, height: area.height / 2 } } };
+  }
+
+  if (clientX >= rightEdge && clientY <= CORNER_SNAP_SIZE) {
+    return { bounds: { position: { x: area.x + area.width / 2, y: area.y }, size: { width: area.width / 2, height: area.height / 2 } } };
+  }
+
+  if (clientX <= EDGE_SNAP_SIZE && clientY >= bottomEdge - CORNER_SNAP_SIZE) {
+    return { bounds: { position: { x: area.x, y: area.y + area.height / 2 }, size: { width: area.width / 2, height: area.height / 2 } } };
+  }
+
+  if (clientX >= rightEdge && clientY >= bottomEdge - CORNER_SNAP_SIZE) {
+    return { bounds: { position: { x: area.x + area.width / 2, y: area.y + area.height / 2 }, size: { width: area.width / 2, height: area.height / 2 } } };
+  }
+
+  if (clientY <= EDGE_SNAP_SIZE) {
+    return { bounds: { position: { x: area.x, y: area.y }, size: { width: area.width, height: area.height } }, maximized: true };
+  }
+
+  if (clientX <= EDGE_SNAP_SIZE) {
+    return { bounds: { position: { x: area.x, y: area.y }, size: { width: area.width / 2, height: area.height } } };
+  }
+
+  if (clientX >= rightEdge) {
+    return { bounds: { position: { x: area.x + area.width / 2, y: area.y }, size: { width: area.width / 2, height: area.height } } };
+  }
+
+  return null;
 }
 
 export function Window({ osWindow }: WindowProps) {
@@ -48,6 +83,7 @@ export function Window({ osWindow }: WindowProps) {
     focusWindow,
     closeWindow,
     minimizeWindow,
+    setWindowBounds,
     toggleMaximizeWindow,
     updateWindowPosition,
     updateWindowSize,
@@ -57,6 +93,7 @@ export function Window({ osWindow }: WindowProps) {
     startX: number;
     startY: number;
     startPosition: WindowPosition;
+    moved: boolean;
   } | null>(null);
 
   const resizeStateRef = useRef<{
@@ -75,16 +112,11 @@ export function Window({ osWindow }: WindowProps) {
   const title = app.titleKey ? t(app.titleKey) : osWindow.title;
 
   const getMaximizedBounds = () => {
-    const availableWidth = window.innerWidth - SCREEN_PADDING * 2;
-    const availableHeight =
-      window.innerHeight - TASKBAR_HEIGHT - SCREEN_PADDING * 2;
+    const area = getWorkArea();
 
     return {
-      position: { x: SCREEN_PADDING, y: SCREEN_PADDING },
-      size: {
-        width: Math.max(availableWidth, osWindow.minSize.width),
-        height: Math.max(availableHeight, osWindow.minSize.height),
-      },
+      position: { x: area.x, y: area.y },
+      size: { width: area.width, height: area.height },
     };
   };
 
@@ -92,9 +124,7 @@ export function Window({ osWindow }: WindowProps) {
     toggleMaximizeWindow(osWindow.instanceId, getMaximizedBounds());
   };
 
-  const handleTitlePointerDown = (
-    event: ReactPointerEvent<HTMLDivElement>
-  ) => {
+  const handleTitlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     focusWindow(osWindow.instanceId);
 
     if (osWindow.maximized || event.button !== 0) {
@@ -107,6 +137,7 @@ export function Window({ osWindow }: WindowProps) {
       startX: event.clientX,
       startY: event.clientY,
       startPosition: osWindow.position,
+      moved: false,
     };
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
@@ -116,18 +147,32 @@ export function Window({ osWindow }: WindowProps) {
         return;
       }
 
+      const deltaX = moveEvent.clientX - dragState.startX;
+      const deltaY = moveEvent.clientY - dragState.startY;
+
+      if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+        dragState.moved = true;
+      }
+
       const nextPosition = clampWindowPosition(
-        {
-          x: dragState.startPosition.x + (moveEvent.clientX - dragState.startX),
-          y: dragState.startPosition.y + (moveEvent.clientY - dragState.startY),
-        },
+        { x: dragState.startPosition.x + deltaX, y: dragState.startPosition.y + deltaY },
         osWindow.size
       );
 
       updateWindowPosition(osWindow.instanceId, nextPosition);
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (upEvent: PointerEvent) => {
+      const dragState = dragStateRef.current;
+
+      if (dragState?.moved) {
+        const snap = getSnapBounds(upEvent.clientX, upEvent.clientY);
+
+        if (snap) {
+          setWindowBounds(osWindow.instanceId, snap.bounds, snap.maximized);
+        }
+      }
+
       dragStateRef.current = null;
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
@@ -137,9 +182,7 @@ export function Window({ osWindow }: WindowProps) {
     window.addEventListener("pointerup", handlePointerUp);
   };
 
-  const handleResizePointerDown = (
-    event: ReactPointerEvent<HTMLDivElement>
-  ) => {
+  const handleResizePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!isResizable) {
       return;
     }
@@ -163,8 +206,7 @@ export function Window({ osWindow }: WindowProps) {
       }
 
       const maxWidth = window.innerWidth - osWindow.position.x - SCREEN_PADDING;
-      const maxHeight =
-        window.innerHeight - osWindow.position.y - TASKBAR_HEIGHT - SCREEN_PADDING;
+      const maxHeight = window.innerHeight - osWindow.position.y - TASKBAR_HEIGHT - SCREEN_PADDING;
 
       const nextWidth = Math.min(
         resizeState.startSize.width + (moveEvent.clientX - resizeState.startX),
@@ -176,10 +218,7 @@ export function Window({ osWindow }: WindowProps) {
         maxHeight
       );
 
-      updateWindowSize(osWindow.instanceId, {
-        width: nextWidth,
-        height: nextHeight,
-      });
+      updateWindowSize(osWindow.instanceId, { width: nextWidth, height: nextHeight });
     };
 
     const handlePointerUp = () => {
@@ -214,10 +253,7 @@ export function Window({ osWindow }: WindowProps) {
         zIndex: osWindow.zIndex,
       }}
       initial={{ opacity: 0, scale: 0.96 }}
-      animate={{
-        opacity: 1,
-        scale: isActive ? 1 : 0.985,
-      }}
+      animate={{ opacity: 1, scale: isActive ? 1 : 0.985 }}
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ duration: 0.16 }}
       onPointerDown={() => focusWindow(osWindow.instanceId)}
@@ -237,15 +273,10 @@ export function Window({ osWindow }: WindowProps) {
               <Icon size={16} />
             </div>
 
-            <span className="truncate text-sm font-medium text-slate-100">
-              {title}
-            </span>
+            <span className="truncate text-sm font-medium text-slate-100">{title}</span>
           </div>
 
-          <div
-            className="flex shrink-0 items-center gap-1"
-            onPointerDown={(event) => event.stopPropagation()}
-          >
+          <div className="flex shrink-0 items-center gap-1" onPointerDown={(event) => event.stopPropagation()}>
             <button
               type="button"
               aria-label={t("window.minimize")}
@@ -258,12 +289,8 @@ export function Window({ osWindow }: WindowProps) {
 
             <button
               type="button"
-              aria-label={
-                osWindow.maximized ? t("window.restore") : t("window.maximize")
-              }
-              title={
-                osWindow.maximized ? t("window.restore") : t("window.maximize")
-              }
+              aria-label={osWindow.maximized ? t("window.restore") : t("window.maximize")}
+              title={osWindow.maximized ? t("window.restore") : t("window.maximize")}
               className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white"
               onClick={handleToggleMaximize}
             >
@@ -283,10 +310,7 @@ export function Window({ osWindow }: WindowProps) {
         </div>
 
         <div className="relative min-h-0 min-w-0 flex-1 overflow-auto p-4">
-          <AppComponent
-            windowId={osWindow.instanceId}
-            launchData={osWindow.launchData}
-          />
+          <AppComponent windowId={osWindow.instanceId} launchData={osWindow.launchData} />
         </div>
       </div>
 

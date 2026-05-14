@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderPlus, Image, RefreshCcw, RotateCcw, Terminal } from "lucide-react";
+import { FolderPlus, Image, RefreshCcw, RotateCcw, Terminal, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { useI18n } from "@/context/LanguageContext";
@@ -13,6 +13,8 @@ type DesktopContextMenuProps = {
   onCreateFolder: () => void;
   onOpenTerminalHere: () => void;
   onResetIconPositions: () => void;
+  onMoveSelectedToRecycleBin?: () => void;
+  canMoveSelectedToRecycleBin?: boolean;
 };
 
 export function DesktopContextMenu({
@@ -23,35 +25,20 @@ export function DesktopContextMenu({
   onCreateFolder,
   onOpenTerminalHere,
   onResetIconPositions,
+  onMoveSelectedToRecycleBin,
+  canMoveSelectedToRecycleBin,
 }: DesktopContextMenuProps) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
 
   const menuItems = [
-    {
-      label: t("desktop.openTerminalHere"),
-      icon: Terminal,
-      action: onOpenTerminalHere,
-    },
-    {
-      label: t("desktop.changeWallpaper"),
-      icon: Image,
-      action: onChangeWallpaper,
-    },
-    {
-      label: t("desktop.newFolder"),
-      icon: FolderPlus,
-      action: onCreateFolder,
-    },
-    {
-      label: t("desktop.resetIconPositions"),
-      icon: RotateCcw,
-      action: onResetIconPositions,
-    },
-    {
-      label: t("desktop.refresh"),
-      icon: RefreshCcw,
-      action: onClose,
-    },
+    { label: t("desktop.openTerminalHere"), icon: Terminal, action: onOpenTerminalHere },
+    { label: t("desktop.changeWallpaper"), icon: Image, action: onChangeWallpaper },
+    { label: t("desktop.newFolder"), icon: FolderPlus, action: onCreateFolder },
+    { label: t("desktop.resetIconPositions"), icon: RotateCcw, action: onResetIconPositions },
+    ...(canMoveSelectedToRecycleBin && onMoveSelectedToRecycleBin
+      ? [{ label: language === "tr" ? "Geri Dönüşüm Kutusu'na taşı" : "Move to Recycle Bin", icon: Trash2, action: onMoveSelectedToRecycleBin }]
+      : []),
+    { label: t("desktop.refresh"), icon: RefreshCcw, action: onClose },
   ];
 
   return (
@@ -65,7 +52,6 @@ export function DesktopContextMenu({
     >
       {menuItems.map((item) => {
         const Icon = item.icon;
-
         return (
           <button
             key={item.label}

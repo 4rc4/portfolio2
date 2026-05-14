@@ -46,7 +46,7 @@ function commandHelp() {
 
 export function TerminalApp({ launchData }: AppComponentProps) {
   const { language, setLanguage, t } = useI18n();
-  const { setThemeMode, setWallpaperId, setAccentColorId } = useOSSettings();
+  const { setThemeMode, setWallpaperId, setAccentColorId, nextWallpaper } = useOSSettings();
   const { openApp } = useWindowManager();
 
   const initialPath =
@@ -371,6 +371,17 @@ export function TerminalApp({ launchData }: AppComponentProps) {
 
       setCurrentPath(targetPath);
       pushLines(promptLine);
+      return;
+    }
+
+    if (normalizedCommand === "wallpaper") {
+      if (args[0] === "next") {
+        nextWallpaper();
+        pushLines(promptLine, createLine("output", "Wallpaper changed."));
+        return;
+      }
+
+      pushLines(promptLine, createLine("error", "Usage: wallpaper next"));
       return;
     }
 
